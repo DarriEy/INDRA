@@ -562,7 +562,7 @@ def summarize_settings(settings: Dict[str, Any], max_length: int = 2000) -> str:
 
 # Usage
 if __name__ == "__main__":
-    api_key = "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"
+    api_key = 
     indra = INDRA(api_key)
 
     # Ask user if they want to use an existing config or create a new one
