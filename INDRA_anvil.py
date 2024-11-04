@@ -289,29 +289,69 @@ class Chairperson:
         """.format(watershed_name)
         
         try:
+            print("\nRequesting configuration from AnvilGPT...")
             response = self.api.generate_text(prompt, system_message)
             
-            # Extract the Python dictionary code block
-            if "```python" not in response or "```" not in response.split("```python")[1]:
-                raise ValueError("Could not find proper code block in response")
+            print("\nParsing response...")
+            print(f"Response length: {len(response)}")
+            
+            # First, try to extract the code block
+            if "```python" not in response:
+                print("\nNo Python code block found. Looking for config dictionary directly...")
+                # Try to find the config dictionary directly
+                if "config = {" in response:
+                    start_idx = response.find("config = {")
+                    end_idx = response.find("}", start_idx) + 1
+                    code_block = response[start_idx:end_idx]
+                else:
+                    raise ValueError("Could not find configuration dictionary in response")
+            else:
+                # Split by code block markers
+                parts = response.split("```")
+                if len(parts) < 3:
+                    print("\nIncomplete code block found. Response parts:", len(parts))
+                    raise ValueError("Incomplete code block in response")
                 
-            code_block = response.split("```python")[1].split("```")[0].strip()
+                # Get the python code block (should be the second part)
+                code_block = parts[1].replace('python', '').strip()
+            
+            print("\nExtracting configuration...")
+            print(f"Code block found: {code_block[:100]}...")  # Print first 100 chars
             
             # Create a new dictionary to store the configuration
             local_vars = {}
             
-            # Execute the code block in a safe context
-            exec(code_block, {"__builtins__": {}}, local_vars)
+            try:
+                # Execute the code block in a safe context
+                exec(code_block, {"__builtins__": {}}, local_vars)
+            except Exception as e:
+                print(f"\nError executing code block: {str(e)}")
+                print("Code block content:")
+                print(code_block)
+                raise
             
             # Get the config dictionary
             if 'config' not in local_vars:
                 raise ValueError("Configuration dictionary not found in response")
             
             config = local_vars['config']
+            print("\nConfiguration extracted successfully.")
             
-            # Extract justification (everything after the code block)
-            justification = response.split("```")[-1].strip()
+            # Extract justification (everything after the configuration)
+            try:
+                if "```" in response:
+                    justification = response.split("```")[-1].strip()
+                else:
+                    end_idx = response.find("}", response.find("config = {")) + 1
+                    justification = response[end_idx:].strip()
+                
+                if not justification:
+                    justification = "No detailed justification provided in the response."
+            except Exception as e:
+                print(f"\nError extracting justification: {str(e)}")
+                justification = "Error extracting justification from response."
             
+            print("\nValidating configuration...")
             # Validate the required keys are present
             required_keys = {
                 "HYDROLOGICAL_MODEL", "ROUTING_MODEL", "FORCING_DATASET", 
@@ -331,10 +371,11 @@ class Chairperson:
             if not isinstance(config["FORCING_DATASET"], str) or config["FORCING_DATASET"] not in ["RDRS", "ERA5"]:
                 raise ValueError("Invalid FORCING_DATASET value")
             
+            print("\nConfiguration validation successful.")
             return config, justification
             
         except Exception as e:
-            print(f"\nError parsing configuration response: {str(e)}")
+            print(f"\nError processing configuration: {str(e)}")
             print("\nFalling back to default configuration...")
             
             # Provide a default configuration as fallback
