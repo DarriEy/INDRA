@@ -6,6 +6,8 @@ import json
 import os
 import sys
 
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+from CONFLUENCE.CONFLUENCE import CONFLUENCE # type: ignore
 
 CONFLUENCE_OVERVIEW = """
 CONFLUENCE (Community Optimization and Numerical Framework for Large-domain Understanding of Environmental Networks and Computational Exploration) is an integrated hydrological modeling platform. It combines various components for data management, model setup, optimization, uncertainty analysis, forecasting, and visualization across multiple scales and regions.
@@ -85,7 +87,6 @@ class AnvilGPTAPI:
             "Content-Type": "application/json"
         }
         
-        # Combine system message and prompt
         messages = [
             {"role": "system", "content": system_message},
             {"role": "user", "content": prompt}
@@ -102,7 +103,6 @@ class AnvilGPTAPI:
             response = requests.post(self.url, headers=headers, json=body)
             response.raise_for_status()
             
-            # Handle streaming response
             full_response = ""
             for line in response.iter_lines():
                 if line:
@@ -111,11 +111,8 @@ class AnvilGPTAPI:
                         if 'message' in json_response:
                             content = json_response['message'].get('content', '')
                             full_response += content
-                            # Optional: Print content as it arrives for debugging
-                            print(content, end='', flush=True)
                     except json.JSONDecodeError as e:
                         print(f"Error decoding JSON: {e}")
-                        print(f"Problematic line: {line}")
                         continue
                         
             return full_response.strip()
@@ -124,24 +121,409 @@ class AnvilGPTAPI:
             raise Exception(f"AnvilGPT API error: {str(e)}")
 
 class Expert:
-    """Base class for expert agents."""
     def __init__(self, name: str, expertise: str, api: AnvilGPTAPI):
         self.name = name
         self.expertise = expertise
         self.api = api
-        self.prompt = EXPERT_PROMPTS[name]  # We'll define this at the top of the file
+        self.prompt = EXPERT_PROMPTS[name]
 
-    def analyze_settings(self, settings: Dict[str, Any]) -> Dict[str, Any]:
-        """Basic analysis method that can be overridden by specific experts."""
+    def analyze_settings(self, settings: Dict[str, Any], confluence_results: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         summarized_settings = summarize_settings(settings)
-        system_message = f"You are a world-class expert in {self.expertise}."
-        prompt = f"{self.prompt}\n\nAnalyze these settings:\n\n{summarized_settings}"
+        system_message = f"You are a world-class expert in {self.expertise} with extensive knowledge of the CONFLUENCE model."
+        prompt = f"{self.prompt}\n\nAnalyze the following CONFLUENCE model settings:\n\n{summarized_settings}"
+        
+        if confluence_results:
+            prompt += f"\n\nCONFLUENCE Results: {confluence_results}"
         
         analysis = self.api.generate_text(prompt, system_message)
         return {"full_analysis": analysis}
 
+class HydrologistExpert(Expert):
+    def __init__(self, api: AnvilGPTAPI):
+        super().__init__("Hydrologist Expert", "hydrological processes and model structure", api)
+
+    def generate_perceptual_model(self, settings: Dict[str, Any]) -> str:
+        summarized_settings = summarize_settings(settings)
+        system_message = "You are a world-class hydrologist."
+        prompt = f'''Based on the following CONFLUENCE model domain, generate a detailed perceptual model summary:\n\n{summarized_settings}'''
+        perceptual_model = self.api.generate_text(prompt, system_message)
+        return perceptual_model
+
+class DataScienceExpert(Expert):
+    def __init__(self, api: AnvilGPTAPI):
+        super().__init__("Data Science Expert", "data science and preprocessing for hydrological models", api)
+
+class HydrogeologyExpert(Expert):
+    def __init__(self, api: AnvilGPTAPI):
+        super().__init__("Hydrogeology Expert", "parameter estimation and optimization for hydrological models", api)
+    
+    def generate_perceptual_model(self, settings: Dict[str, Any]) -> str:
+        summarized_settings = summarize_settings(settings)
+        system_message = "You are a world-class hydrogeologist."
+        prompt = f'''Based on the following CONFLUENCE model domain, generate a detailed perceptual model summary:\n\n{summarized_settings}'''
+        perceptual_model = self.api.generate_text(prompt, system_message)
+        return perceptual_model
+
+class MeteorologicalExpert(Expert):
+    def __init__(self, api: AnvilGPTAPI):
+        super().__init__("Meteorological Expert", "evaluation of hydrological model performance", api)
+    
+    def generate_perceptual_model(self, settings: Dict[str, Any]) -> str:
+        summarized_settings = summarize_settings(settings)
+        system_message = "You are a world-class meteorologist."
+        prompt = f'''Based on the following CONFLUENCE model domain, generate a detailed perceptual model summary:\n\n{summarized_settings}'''
+        perceptual_model = self.api.generate_text(prompt, system_message)
+        return perceptual_model
+
+class Chairperson:
+    def __init__(self, experts: List[Expert], api: AnvilGPTAPI):
+        self.experts = experts
+        self.api = api
+
+    def load_control_file(self, file_path: Path) -> Dict[str, Any]:
+        with open(file_path, 'r') as f:
+            return yaml.safe_load(f)
+
+    def consult_experts(self, settings: Dict[str, Any], confluence_results: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        synthesis = {}
+        for expert in self.experts:
+            synthesis[expert.name] = expert.analyze_settings(settings, confluence_results)
+        return synthesis
+
+    def generate_report(self, settings: Dict[str, Any], synthesis: Dict[str, Any], confluence_results: Optional[Dict[str, Any]] = None) -> Tuple[Dict[str, str], Dict[str, Any]]:
+        summarized_settings = summarize_settings(settings)
+        
+        system_message = "You are the chairperson of INDRA."
+        prompt = f"Summarize the following expert analyses as a panel discussion:\n\n"
+        for expert_name, analysis in synthesis.items():
+            prompt += f"{expert_name} Analysis: {analysis['full_analysis']}\n\n"
+        
+        if confluence_results:
+            prompt += f"CONFLUENCE Results: {confluence_results}\n\n"
+        
+        panel_summary = self.api.generate_text(prompt, system_message)
+        
+        prompt = f"Based on the panel discussion and settings, provide a concluded summary and suggest improvements:\n\nPanel Discussion: {panel_summary}\n\nSettings: {summarized_settings}"
+        if confluence_results:
+            prompt += f"\n\nCONFLUENCE Results: {confluence_results}"
+        
+        conclusion = self.api.generate_text(prompt, system_message)
+        
+        suggestions = self._extract_suggestions(conclusion)
+        
+        return {
+            "concluded_summary": conclusion,
+            "panel_summary": panel_summary
+        }, suggestions
+
+    def _extract_suggestions(self, conclusion: str) -> Dict[str, Any]:
+        system_message = "You are the chairperson of INDRA."
+        prompt = f"""Extract key suggestions for improving the CONFLUENCE model configuration from this conclusion. Format as a Python dictionary:
+
+        Conclusion:
+        {conclusion}
+
+        Format your response as:
+        SUGGESTIONS DICTIONARY:
+        suggestions = {{
+            "PARAMETER1": "suggested change 1",
+            "PARAMETER2": "suggested change 2",
+        }}
+
+        SUMMARY:
+        <Brief summary of suggestions and impact>
+        """
+
+        response = self.api.generate_text(prompt, system_message)
+        
+        dict_part = response.split("SUGGESTIONS DICTIONARY:")[1].split("SUMMARY:")[0].strip()
+        local_vars = {}
+        exec(dict_part, globals(), local_vars)
+        suggestions = local_vars['suggestions']
+
+        return suggestions
+
+    def expert_initiation(self, watershed_name: str) -> Tuple[Dict[str, Any], str]:
+        system_message = "You are the chairperson of INDRA."
+        prompt = f"""
+        We are initiating a new CONFLUENCE project for the watershed: {watershed_name}
+
+        Suggest optimal initial settings for:
+        1. HYDROLOGICAL_MODEL (SUMMA, FLASH)
+        2. ROUTING_MODEL (mizuroute)
+        3. FORCING_DATASET (RDRS, ERA5)
+        4. STREAM_THRESHOLD
+        5. DOMAIN_DISCRETIZATION (elevation, soilclass, landclass)
+        6. ELEVATION_BAND_SIZE
+        7. MIN_HRU_SIZE
+        8. POUR_POINT_COORDS (lat/lon)
+        9. BOUNDING_BOX_COORDS (lat_max/lat_min/lon_max/lon_min)
+
+        Format response as:
+        CONFIG DICTIONARY:
+        config = {{
+            "PARAMETER1": value1,
+            "PARAMETER2": value2,
+        }}
+
+        JUSTIFICATION SUMMARY:
+        <Justification for choices>
+        """
+        
+        response = self.api.generate_text(prompt, system_message)
+        
+        config_part = response.split("CONFIG DICTIONARY:")[1].split("JUSTIFICATION SUMMARY:")[0].strip()
+        justification = response.split("JUSTIFICATION SUMMARY:")[1].strip()
+        
+        local_vars = {}
+        exec(config_part, globals(), local_vars)
+        config = local_vars['config']
+        
+        return config, justification
+
+class INDRA:
+    def __init__(self):
+        bearer_token = os.environ.get('ANVIL_GPT_API_KEY')
+        if not bearer_token:
+            raise ValueError("ANVIL_GPT_API_KEY not found in environment variables")
+
+        self.api = AnvilGPTAPI(bearer_token)
+        self.experts = [
+            HydrologistExpert(self.api),
+            DataScienceExpert(self.api),
+            HydrogeologyExpert(self.api),
+            MeteorologicalExpert(self.api)
+        ]
+        self.chairperson = Chairperson(self.experts, self.api)
+
+    def _generate_perceptual_models(self, watershed_name: str) -> Dict[str, str]:
+        print("Consulting domain experts for perceptual model generation...")
+        
+        perceptual_models = {}
+        domain_experts = [expert for expert in self.experts 
+                        if isinstance(expert, (HydrologistExpert, HydrogeologyExpert, MeteorologicalExpert))]
+        
+        settings = {"DOMAIN_NAME": watershed_name}
+        
+        for expert in domain_experts:
+            print(f"\nGenerating {expert.name} perceptual model...")
+            perceptual_models[expert.name] = expert.generate_perceptual_model(settings)
+        
+        return perceptual_models
+
+    def _save_perceptual_models(self, file_path: Path, perceptual_models: Dict[str, str]):
+        with open(file_path, 'w') as f:
+            f.write("INDRA Perceptual Models Report\n")
+            f.write("=============================\n\n")
+            
+            for expert_name, model in perceptual_models.items():
+                f.write(f"{expert_name} Perceptual Model\n")
+                f.write("-" * (len(expert_name) + 17) + "\n")
+                f.write(model)
+                f.write("\n\n")
+
+    def run(self, control_file_path: Optional[Path] = None, confluence_results: Optional[Dict[str, Any]] = None) -> Tuple[Dict[str, str], Dict[str, Any]]:
+        is_new_project = control_file_path is None
+        
+        if is_new_project:
+            print("Initiating a new CONFLUENCE project.")
+            watershed_name = input("Enter the name of the watershed you want to model: ")
+        else:
+            settings = self.chairperson.load_control_file(control_file_path)
+            watershed_name = settings.get('DOMAIN_NAME')
+
+        print("\nGenerating perceptual models for the domain...")
+        perceptual_models = self._generate_perceptual_models(watershed_name)
+        
+        report_path = Path(os.getcwd()) / "indra_reports"
+        report_path.mkdir(parents=True, exist_ok=True)
+        
+        perceptual_model_file = report_path / f"perceptual_model_{watershed_name}.txt"
+        self._save_perceptual_models(perceptual_model_file, perceptual_models)
+        
+        print(f"\nPerceptual models saved to: {perceptual_model_file}")
+        
+        if input("\nContinue with configuration? (y/n): ").lower() != 'y':
+            return {}, {}
+
+        if is_new_project:
+            config, justification = self.chairperson.expert_initiation(watershed_name)
+            
+            rationale_file = report_path / f"initial_decision_rationale_{watershed_name}.txt"
+            with open(rationale_file, 'w') as f:
+                f.write(f"INDRA Initial Configuration Decisions for {watershed_name}\n")
+                f.write("=" * 50 + "\n\n")
+                f.write("Configuration Parameters:\n")
+                f.write("-" * 35 + "\n")
+                for key, value in config.items():
+                    f.write(f"{key}: {value}\n")
+                f.write("\nJustification:\n")
+                f.write("-" * 13 + "\n")
+                f.write(justification)
+            
+            print(f"\nConfiguration rationale saved to: {rationale_file}")
+            
+            config_path = Path("0_config_files")
+            config_path.mkdir(parents=True, exist_ok=True)
+            config_file_path = config_path / f"config_{watershed_name}.yaml"
+            
+            with open(config_file_path, 'w') as f:
+                yaml.dump(config, f)
+            
+            active_config_path = config_path / "config_active.yaml"
+            if active_config_path.exists():
+                active_config_path.unlink()
+            active_config_path.symlink_to(config_file_path.name)
+            
+            settings = config
+        
+        synthesis = self.chairperson.consult_experts(settings, confluence_results)
+        report, suggestions = self.chairperson.generate_report(settings, synthesis, confluence_results)
+        
+        self._save_synthesis_report(report, suggestions, watershed_name, report_path)
+        
+        print("\nINDRA Analysis Summary:")
+        print("------------------------")
+        if not is_new_project:
+            print(f"Analyzed config file: {control_file_path}")
+        print("\nKey points from analysis:")
+        for i, key_point in enumerate(report['concluded_summary'].split('\n')[:10], 1):
+            print(f"{i}. {key_point}")
+        
+        print("\nSuggestions for improvement:")
+        for param, suggestion in suggestions.items():
+            print(f"{param}: {suggestion}")
+            
+    def _save_synthesis_report(self, report: Dict[str, str], suggestions: Dict[str, Any], 
+                          watershed_name: str, report_path: Path):
+        """Save the synthesis report for an existing project."""
+        synthesis_file = report_path / f"synthesis_report_{watershed_name}.txt"
+        
+        with open(synthesis_file, 'w') as f:
+            f.write(f"INDRA Synthesis Report for {watershed_name}\n")
+            f.write("=" * 50 + "\n\n")
+            
+            f.write("Expert Panel Discussion Summary\n")
+            f.write("-" * 28 + "\n")
+            f.write(report['panel_summary'])
+            f.write("\n\n")
+            
+            f.write("Concluded Summary\n")
+            f.write("-" * 16 + "\n")
+            f.write(report['concluded_summary'])
+            f.write("\n\n")
+            
+            f.write("Configuration Suggestions\n")
+            f.write("-" * 24 + "\n")
+            for param, suggestion in suggestions.items():
+                f.write(f"{param}: {suggestion}\n")
+        
+        print(f"\nSynthesis report saved to: {synthesis_file}")
+
+    def _modify_configuration(self, settings: Dict[str, Any], expert_config: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Allow user to modify INDRA-suggested configuration settings interactively."""
+        updated_settings = settings.copy()
+        print("\nINDRA-suggested configuration settings:")
+        modifiable_settings = {k: v for k, v in updated_settings.items() if k in expert_config}
+        
+        for key, value in modifiable_settings.items():
+            print(f"{key}: {value}")
+        
+        while True:
+            print("\nEnter setting key to modify (or 'done' to finish, 'cancel' to discard changes):")
+            key = input().strip()
+            
+            if key.lower() == 'done':
+                return updated_settings
+            elif key.lower() == 'cancel':
+                return None
+            
+            if key in modifiable_settings:
+                current_value = updated_settings[key]
+                print(f"Current value: {current_value}")
+                print(f"Enter new value for {key}:")
+                new_value = input().strip()
+                
+                try:
+                    if isinstance(current_value, bool):
+                        new_value = new_value.lower() in ('true', 'yes', '1', 'on')
+                    elif isinstance(current_value, int):
+                        new_value = int(new_value)
+                    elif isinstance(current_value, float):
+                        new_value = float(new_value)
+                    elif isinstance(current_value, str) and ' ' in new_value:
+                        new_value = f"'{new_value}'"
+                except ValueError:
+                    print(f"Warning: Could not convert to type {type(current_value).__name__}, storing as string")
+                
+                updated_settings[key] = new_value
+                print(f"Updated {key} to: {new_value}")
+            else:
+                print(f"Setting '{key}' is not an INDRA-suggested configuration.")
+                print("Modifiable settings are:", ', '.join(modifiable_settings.keys()))
+        
+        return updated_settings
+
+    def _create_config_file_from_template(self, template_path: Path, output_path: Path, 
+                                    watershed_name: str, expert_config: Dict[str, Any]):
+        """Create a new configuration file from template while preserving structure and comments."""
+        if not template_path.exists():
+            raise FileNotFoundError(f"Template not found at: {template_path}")
+        
+        with open(template_path, 'r') as f:
+            template_lines = f.readlines()
+        
+        expert_config['DOMAIN_NAME'] = watershed_name
+        
+        with open(output_path, 'w') as f:
+            for line in template_lines:
+                if line.strip().startswith('#') or line.strip().startswith('### ==='):
+                    f.write(line)
+                    continue
+                    
+                if ':' in line:
+                    key = line.split(':')[0].strip()
+                    if key in expert_config:
+                        comment = line.split('#')[1].strip() if '#' in line else ''
+                        value = expert_config[key]
+                        if isinstance(value, str):
+                            value = f"'{value}'" if ' ' in value else value
+                        new_line = f"{key}: {value}"
+                        if comment:
+                            new_line += f"  # {comment}"
+                        f.write(new_line + '\n')
+                    else:
+                        f.write(line)
+                else:
+                    f.write(line)
+
+    def analyze_confluence_results(self, confluence_results: Dict[str, Any]) -> str:
+        """Analyze the results from a CONFLUENCE run."""
+        system_message = "You are an expert in analyzing hydrological model results."
+        
+        prompt = f"""
+        Please analyze these CONFLUENCE model results:
+
+        {confluence_results}
+
+        Provide a brief summary of model performance, highlighting notable aspects or potential issues.
+        """
+
+        analysis = self.api.generate_text(prompt, system_message)
+        return analysis
+
+    def run_confluence(self, config_path: Path) -> Dict[str, Any]:
+        """Run CONFLUENCE with the given configuration file."""
+        try:
+            confluence = CONFLUENCE(config_path)
+            confluence.run_workflow()
+            return confluence.get_results()
+        except Exception as e:
+            print(f"Error running CONFLUENCE: {str(e)}")
+            return {"error": str(e)}
+
 def summarize_settings(settings: Dict[str, Any], max_length: int = 2000) -> str:
-    """Utility function to summarize settings."""
+    """Summarize the settings to a maximum length."""
     settings_str = yaml.dump(settings)
     if len(settings_str) <= max_length:
         return settings_str
@@ -155,43 +537,62 @@ def summarize_settings(settings: Dict[str, Any], max_length: int = 2000) -> str:
     
     return summarized
 
-# Test function
-def test_anvil_gpt():
-    """Test the Anvil GPT API implementation."""
-    try:
-        # Get bearer token from environment
-        bearer_token = os.environ.get('ANVIL_GPT_API_KEY')
-        if not bearer_token:
-            raise ValueError("ANVIL_GPT_API_KEY not found in environment variables")
-        
-        # Initialize API
-        api = AnvilGPTAPI(bearer_token)
-        
-        # Test simple prompt
-        print("Testing simple prompt...")
-        response = api.generate_text(
-            prompt="Explain what a hydrological model is in one sentence.",
-            system_message="You are an expert in hydrology."
-        )
-        print("\nResponse:", response)
-        
-        # Test longer analysis
-        print("\nTesting longer analysis...")
-        test_settings = {
-            "HYDROLOGICAL_MODEL": "SUMMA",
-            "DOMAIN_NAME": "TestBasin",
-            "FORCING_DATASET": "ERA5"
-        }
-        
-        expert = Expert("Hydrologist Expert", "hydrology", api)
-        analysis = expert.analyze_settings(test_settings)
-        print("\nAnalysis:", analysis['full_analysis'])
-        
-    except Exception as e:
-        print(f"Error during test: {str(e)}")
-        if isinstance(e, ValueError) and "ANVIL_GPT_TOKEN" in str(e):
-            print("\nTo set up your Anvil GPT token:")
-            print("Export ANVIL_GPT_TOKEN='your-bearer-token' in your environment")
-
 if __name__ == "__main__":
-    test_anvil_gpt()
+    try:
+        indra = INDRA()
+        
+        use_existing = input("Do you want to use an existing config file? (y/n): ").lower() == 'y'
+        
+        if use_existing:
+            while True:
+                print("\nEnter the path to your configuration file:")
+                print("(You can use absolute path or relative path from current directory)")
+                control_file_input = input().strip()
+                
+                control_file_path = Path(control_file_input).resolve()
+                
+                if not control_file_path.exists():
+                    print(f"\nError: File not found: {control_file_path}")
+                    retry = input("Try another path? (y/n): ").lower() == 'y'
+                    if not retry:
+                        print("Exiting program.")
+                        sys.exit()
+                elif not control_file_path.suffix in ['.yaml', '.yml']:
+                    print(f"\nError: File must be a YAML file (.yaml or .yml)")
+                    retry = input("Try another path? (y/n): ").lower() == 'y'
+                    if not retry:
+                        print("Exiting program.")
+                        sys.exit()
+                else:
+                    try:
+                        with open(control_file_path, 'r') as f:
+                            yaml.safe_load(f)
+                        print(f"\nUsing configuration file: {control_file_path}")
+                        break
+                    except yaml.YAMLError:
+                        print(f"\nError: Invalid YAML format in {control_file_path}")
+                        retry = input("Try another path? (y/n): ").lower() == 'y'
+                        if not retry:
+                            print("Exiting program.")
+                            sys.exit()
+        else:
+            control_file_path = None
+        
+        confluence_results = None
+        indra.run(control_file_path, confluence_results)
+        
+    except ValueError as e:
+        print(f"Error: {e}")
+        print("\nTo set up your API key:")
+        print("\nFor Unix-like systems (Linux/Mac):")
+        print("1. Add to ~/.bashrc or ~/.zshrc:")
+        print('   export ANVIL_GPT_API_KEY="your-api-key-here"')
+        print("2. Run: source ~/.bashrc (or source ~/.zshrc)")
+        print("\nFor Windows:")
+        print("1. Open System Properties -> Advanced -> Environment Variables")
+        print("2. Add new User Variable:")
+        print("   Name: ANVIL_GPT_API_KEY")
+        print("   Value: your-api-key")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        print(f"Error details: {str(e)}")
