@@ -145,7 +145,10 @@ class HydrologistExpert(Expert):
     def generate_perceptual_model(self, settings: Dict[str, Any]) -> str:
         summarized_settings = summarize_settings(settings)
         system_message = "You are a world-class hydrologist."
-        prompt = f'''Based on the following CONFLUENCE model domain, generate a detailed perceptual model summary:\n\n{summarized_settings}'''
+        prompt = f'''Based on the following CONFLUENCE model domain, generate a detailed and extensive perceptual model summary for the domain being modelled, 
+                     citing the relevant literature and providing a list of references. Include key  processes and their interaction. 
+                     Summarize previous modelling efforts in this basin and their findings. Identify modelling approaches that have provided good results or 
+                     are likely to provide good results. Also identify (if available in the literature) modelling approaches that have not proven fruitful.'''
         perceptual_model = self.api.generate_text(prompt, system_message)
         return perceptual_model
 
@@ -160,7 +163,10 @@ class HydrogeologyExpert(Expert):
     def generate_perceptual_model(self, settings: Dict[str, Any]) -> str:
         summarized_settings = summarize_settings(settings)
         system_message = "You are a world-class hydrogeologist."
-        prompt = f'''Based on the following CONFLUENCE model domain, generate a detailed perceptual model summary:\n\n{summarized_settings}'''
+        prompt = f'''Based on the following CONFLUENCE model domain, generate a detailed and extensive perceptual model summary for the domain being modelled, 
+                     citing the relevant literature and providing a list of references. Include key  processes and their interaction. 
+                     Summarize previous modelling efforts in this basin and their findings. Identify modelling approaches that have provided good results or 
+                     are likely to provide good results. Also identify (if available in the literature) modelling approaches that have not proven fruitful.'''
         perceptual_model = self.api.generate_text(prompt, system_message)
         return perceptual_model
 
@@ -171,7 +177,10 @@ class MeteorologicalExpert(Expert):
     def generate_perceptual_model(self, settings: Dict[str, Any]) -> str:
         summarized_settings = summarize_settings(settings)
         system_message = "You are a world-class meteorologist."
-        prompt = f'''Based on the following CONFLUENCE model domain, generate a detailed perceptual model summary:\n\n{summarized_settings}'''
+        prompt = f'''Based on the following CONFLUENCE model domain, generate a detailed and extensive perceptual model summary for the domain being modelled, 
+                     citing the relevant literature and providing a list of references. Include key  processes and their interaction. 
+                     Summarize previous modelling efforts in this basin and their findings. Identify modelling approaches that have provided good results or 
+                     are likely to provide good results. Also identify (if available in the literature) modelling approaches that have not proven fruitful.'''
         perceptual_model = self.api.generate_text(prompt, system_message)
         return perceptual_model
 
@@ -244,6 +253,7 @@ class Chairperson:
         return suggestions
 
     def expert_initiation(self, watershed_name: str) -> Tuple[Dict[str, Any], str]:
+        """Consult experts to determine optimal initial settings for the given watershed."""
         system_message = "You are the chairperson of INDRA."
         prompt = f"""
         We are initiating a new CONFLUENCE project for the watershed: {watershed_name}
@@ -259,27 +269,83 @@ class Chairperson:
         8. POUR_POINT_COORDS (lat/lon)
         9. BOUNDING_BOX_COORDS (lat_max/lat_min/lon_max/lon_min)
 
-        Format response as:
-        CONFIG DICTIONARY:
-        config = {{
-            "PARAMETER1": value1,
-            "PARAMETER2": value2,
-        }}
+        Your response MUST follow this EXACT format (including the triple backticks):
+        ```python
+        config = {
+            "HYDROLOGICAL_MODEL": "value",
+            "ROUTING_MODEL": "value",
+            "FORCING_DATASET": "value",
+            "STREAM_THRESHOLD": value,
+            "DOMAIN_DISCRETIZATION": "value",
+            "ELEVATION_BAND_SIZE": value,
+            "MIN_HRU_SIZE": value,
+            "POUR_POINT_COORDS": "value",
+            "BOUNDING_BOX_COORDS": "value"
+        }
+        ```
 
-        JUSTIFICATION SUMMARY:
-        <Justification for choices>
+        After the configuration block, provide a detailed justification for each choice.
         """
         
         response = self.api.generate_text(prompt, system_message)
         
-        config_part = response.split("CONFIG DICTIONARY:")[1].split("JUSTIFICATION SUMMARY:")[0].strip()
-        justification = response.split("JUSTIFICATION SUMMARY:")[1].strip()
-        
-        local_vars = {}
-        exec(config_part, globals(), local_vars)
-        config = local_vars['config']
-        
-        return config, justification
+        try:
+            # Extract the Python dictionary code block
+            code_block = response.split("```python")[1].split("```")[0].strip()
+            
+            # Create a new dictionary to store the configuration
+            local_vars = {}
+            
+            # Execute the code block in a safe context
+            exec(code_block, {"__builtins__": {}}, local_vars)
+            
+            # Get the config dictionary
+            if 'config' not in local_vars:
+                raise ValueError("Configuration dictionary not found in response")
+            
+            config = local_vars['config']
+            
+            # Extract justification (everything after the code block)
+            justification = response.split("```")[-1].strip()
+            
+            # Validate the required keys are present
+            required_keys = {
+                "HYDROLOGICAL_MODEL", "ROUTING_MODEL", "FORCING_DATASET", 
+                "STREAM_THRESHOLD", "DOMAIN_DISCRETIZATION", "ELEVATION_BAND_SIZE", 
+                "MIN_HRU_SIZE", "POUR_POINT_COORDS", "BOUNDING_BOX_COORDS"
+            }
+            
+            missing_keys = required_keys - set(config.keys())
+            if missing_keys:
+                raise ValueError(f"Missing required configuration keys: {missing_keys}")
+            
+            return config, justification
+            
+        except Exception as e:
+            print(f"\nError parsing configuration response: {str(e)}")
+            print("\nFalling back to default configuration...")
+            
+            # Provide a default configuration as fallback
+            default_config = {
+                "HYDROLOGICAL_MODEL": "SUMMA",
+                "ROUTING_MODEL": "mizuroute",
+                "FORCING_DATASET": "ERA5",
+                "STREAM_THRESHOLD": 5000,
+                "DOMAIN_DISCRETIZATION": "elevation",
+                "ELEVATION_BAND_SIZE": 100,
+                "MIN_HRU_SIZE": 1,
+                "POUR_POINT_COORDS": "0.0/0.0",  # This should be updated for the specific watershed
+                "BOUNDING_BOX_COORDS": "1.0/-1.0/1.0/-1.0"  # This should be updated for the specific watershed
+            }
+            
+            default_justification = """
+            Using default configuration values. Please update the following parameters manually:
+            - POUR_POINT_COORDS: Set to actual pour point coordinates
+            - BOUNDING_BOX_COORDS: Set to actual watershed bounding box
+            Other parameters can be adjusted based on specific watershed characteristics.
+            """
+            
+            return default_config, default_justification
 
 class INDRA:
     def __init__(self):
@@ -393,7 +459,7 @@ class INDRA:
         print("\nSuggestions for improvement:")
         for param, suggestion in suggestions.items():
             print(f"{param}: {suggestion}")
-            
+
     def _save_synthesis_report(self, report: Dict[str, str], suggestions: Dict[str, Any], 
                           watershed_name: str, report_path: Path):
         """Save the synthesis report for an existing project."""
