@@ -255,8 +255,8 @@ class Chairperson:
     def expert_initiation(self, watershed_name: str) -> Tuple[Dict[str, Any], str]:
         """Consult experts to determine optimal initial settings for the given watershed."""
         system_message = "You are the chairperson of INDRA."
-        prompt = f"""
-        We are initiating a new CONFLUENCE project for the watershed: {watershed_name}
+        prompt = """
+        We are initiating a new CONFLUENCE project for the watershed: {}
 
         Suggest optimal initial settings for:
         1. HYDROLOGICAL_MODEL (SUMMA, FLASH)
@@ -271,26 +271,30 @@ class Chairperson:
 
         Your response MUST follow this EXACT format (including the triple backticks):
         ```python
-        config = {
-            "HYDROLOGICAL_MODEL": "value",
-            "ROUTING_MODEL": "value",
-            "FORCING_DATASET": "value",
-            "STREAM_THRESHOLD": "value",
-            "DOMAIN_DISCRETIZATION": "value",
-            "ELEVATION_BAND_SIZE": "value",
-            "MIN_HRU_SIZE": "value",
-            "POUR_POINT_COORDS": "value",
-            "BOUNDING_BOX_COORDS": "value"
-        }
+        config = {{
+            "HYDROLOGICAL_MODEL": "SUMMA",  # or "FLASH"
+            "ROUTING_MODEL": "mizuroute",
+            "FORCING_DATASET": "ERA5",  # or "RDRS"
+            "STREAM_THRESHOLD": 100,  # example value
+            "DOMAIN_DISCRETIZATION": "elevation",  # or "soilclass" or "landclass"
+            "ELEVATION_BAND_SIZE": 100,  # example value
+            "MIN_HRU_SIZE": 1,  # example value
+            "POUR_POINT_COORDS": "60.0/-135.0",  # example coordinates
+            "BOUNDING_BOX_COORDS": "62.0/58.0/-130.0/-140.0"  # example bounding box
+        }}
         ```
 
         After the configuration block, provide a detailed justification for each choice.
-        """
-        
-        response = self.api.generate_text(prompt, system_message)
+        Include reasoning based on the watershed characteristics and available data.
+        """.format(watershed_name)
         
         try:
+            response = self.api.generate_text(prompt, system_message)
+            
             # Extract the Python dictionary code block
+            if "```python" not in response or "```" not in response.split("```python")[1]:
+                raise ValueError("Could not find proper code block in response")
+                
             code_block = response.split("```python")[1].split("```")[0].strip()
             
             # Create a new dictionary to store the configuration
@@ -318,6 +322,14 @@ class Chairperson:
             missing_keys = required_keys - set(config.keys())
             if missing_keys:
                 raise ValueError(f"Missing required configuration keys: {missing_keys}")
+                
+            # Validate the values
+            if not isinstance(config["HYDROLOGICAL_MODEL"], str) or config["HYDROLOGICAL_MODEL"] not in ["SUMMA", "FLASH"]:
+                raise ValueError("Invalid HYDROLOGICAL_MODEL value")
+            if not isinstance(config["ROUTING_MODEL"], str) or config["ROUTING_MODEL"] != "mizuroute":
+                raise ValueError("Invalid ROUTING_MODEL value")
+            if not isinstance(config["FORCING_DATASET"], str) or config["FORCING_DATASET"] not in ["RDRS", "ERA5"]:
+                raise ValueError("Invalid FORCING_DATASET value")
             
             return config, justification
             
@@ -330,19 +342,28 @@ class Chairperson:
                 "HYDROLOGICAL_MODEL": "SUMMA",
                 "ROUTING_MODEL": "mizuroute",
                 "FORCING_DATASET": "ERA5",
-                "STREAM_THRESHOLD": 5000,
+                "STREAM_THRESHOLD": 100,
                 "DOMAIN_DISCRETIZATION": "elevation",
                 "ELEVATION_BAND_SIZE": 100,
                 "MIN_HRU_SIZE": 1,
-                "POUR_POINT_COORDS": "0.0/0.0",  # This should be updated for the specific watershed
-                "BOUNDING_BOX_COORDS": "1.0/-1.0/1.0/-1.0"  # This should be updated for the specific watershed
+                "POUR_POINT_COORDS": "60.0/-135.0",  # Default Yukon coordinates
+                "BOUNDING_BOX_COORDS": "62.0/58.0/-130.0/-140.0"  # Default Yukon bounding box
             }
             
-            default_justification = """
-            Using default configuration values. Please update the following parameters manually:
-            - POUR_POINT_COORDS: Set to actual pour point coordinates
-            - BOUNDING_BOX_COORDS: Set to actual watershed bounding box
+            default_justification = f"""
+            Using default configuration values for {watershed_name} watershed. Please update the following parameters:
+            - POUR_POINT_COORDS: Currently set to default Yukon coordinates
+            - BOUNDING_BOX_COORDS: Currently set to default Yukon bounding box
             Other parameters can be adjusted based on specific watershed characteristics.
+            
+            Default configuration explanation:
+            - HYDROLOGICAL_MODEL: SUMMA (comprehensive physics-based model)
+            - ROUTING_MODEL: mizuroute (standard routing model)
+            - FORCING_DATASET: ERA5 (globally available, good quality)
+            - STREAM_THRESHOLD: 100 (moderate detail level)
+            - DOMAIN_DISCRETIZATION: elevation (standard approach)
+            - ELEVATION_BAND_SIZE: 100m (reasonable resolution)
+            - MIN_HRU_SIZE: 1 km² (standard minimum size)
             """
             
             return default_config, default_justification
