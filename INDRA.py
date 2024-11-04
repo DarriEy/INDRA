@@ -637,6 +637,7 @@ class INDRA:
         report_path = Path(os.getcwd()) / "indra_reports"
         report_path.mkdir(parents=True, exist_ok=True)
         rationale_file = report_path / f"initial_decision_rationale_{watershed_name}.txt"
+        print(justification)
         
         with open(rationale_file, 'w') as f:
             f.write(f"INDRA Initial Configuration Decisions for {watershed_name}\n")
