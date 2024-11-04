@@ -37,63 +37,38 @@ EXPERT_PROMPTS = {
     Provide insights on how the current configuration might impact the model's ability to accurately represent the hydrological system, and suggest potential improvements or alternative approaches where applicable.
     """,
 
-    "Data Preprocessing Expert": f"""
+    "Data Science Expert": f"""
     {CONFLUENCE_OVERVIEW}
     
-    As the Data Preprocessing Expert, your role is to evaluate the data preparation and quality control aspects of the CONFLUENCE setup. Focus on the following areas:
+    As the Data Science Expert, your role is to evaluate the data preparation and quality control aspects of the CONFLUENCE setup. Focus on the following areas:
     1. Quality and appropriateness of the chosen forcing dataset
     2. Temporal and spatial resolution of input data
-    3. Data gap-filling or interpolation methods, if any
-    4. Consistency checks and quality control procedures
-    5. Preprocessing steps for model inputs (e.g., unit conversions, aggregation/disaggregation)
-    6. Handling of metadata and data provenance
     
     Assess the adequacy of the current data preprocessing approach and suggest any improvements that could enhance data quality or model performance.
     """,
 
-    "Model Calibration Expert": f"""
+    "Hydrogeology Expert": f"""
     {CONFLUENCE_OVERVIEW}
     
-    As the Model Calibration Expert, your task is to analyze the calibration and optimization strategy in the CONFLUENCE setup. Consider the following aspects:
-    1. Choice of parameters for calibration
-    2. Selection of objective function(s) and performance metrics
-    3. Calibration algorithm and its configuration
-    4. Definition of calibration and validation periods
-    5. Approach to handling equifinality and parameter uncertainty
-    6. Strategies for avoiding overfitting
-    7. Consideration of multiple calibration objectives or sites
+    As the Hydrogeology Expert, your role is to analyze the CONFLUENCE model settings with a focus on hydrogeological processes and model structure. Consider the following aspects in your analysis:
+    1. Appropriateness of the chosen hydrological model for the given domain
+    2. Representation of key hydrogeological processes (e.g., surface runoff, infiltration, evapotranspiration)
+    3. Temporal and spatial scales of the model setup
+    4. Consistency between model structure and the expected dominant hydrogeological processes in the study area
+    5. Potential limitations or assumptions in the model structure that may affect results
     
-    Evaluate the effectiveness of the current calibration approach and propose any refinements that could lead to more robust or efficient parameter estimation.
+     Provide insights on how the current configuration might impact the model's ability to accurately represent the hydrogeologicallogical system, and suggest potential improvements or alternative approaches where applicable.
     """,
 
-    "Geospatial Analysis Expert": f"""
+    "Meteorological Expert": f"""
     {CONFLUENCE_OVERVIEW}
     
-    As the Geospatial Analysis Expert, your focus is on the spatial aspects of the CONFLUENCE model setup. Analyze the following elements:
-    1. Method of spatial discretization (e.g., HRUs, grid-based)
-    2. Resolution and quality of spatial data inputs (e.g., DEM, land cover, soil maps)
-    3. Delineation of catchments or sub-basins
-    4. Representation of spatial heterogeneity
-    5. Handling of scale issues between data sources and model resolution
-    6. Geospatial preprocessing steps and tools used
-    7. Consideration of spatial patterns in model inputs and outputs
+    As the Meteorological Expert, your role is to analyze the CONFLUENCE model settings with a focus on meteorological processes and model structure. Consider the following aspects in your analysis:
+    1. Quality and appropriateness of the chosen forcing dataset
+    2. Representation of key meteorological processes (e.g., surface runoff, infiltration, evapotranspiration)
+    3. Temporal and spatial scales of the model setup
     
-    Assess the appropriateness of the current geospatial setup and suggest any improvements that could enhance the spatial representation in the model.
-    """,
-
-    "Performance Metrics Expert": f"""
-    {CONFLUENCE_OVERVIEW}
-    
-    As the Performance Metrics Expert, your role is to evaluate the approach to model performance assessment in the CONFLUENCE setup. Consider the following aspects:
-    1. Selection of performance metrics for different hydrological variables
-    2. Appropriateness of chosen metrics for the study objectives
-    3. Consideration of multiple aspects of model performance (e.g., water balance, timing, low/high flows)
-    4. Approach to multi-site or multi-variable performance assessment
-    5. Methods for visualizing and communicating model performance
-    6. Strategies for identifying and diagnosing model deficiencies
-    7. Consideration of uncertainty in performance evaluation
-    
-    Evaluate the comprehensiveness and effectiveness of the current performance assessment approach, and suggest any additional metrics or methods that could provide a more thorough evaluation of model performance.
+     Provide insights on how the current configuration might impact the model's ability to accurately represent the hydrogeologicallogical system, and suggest potential improvements or alternative approaches where applicable.
     """
 }
 
@@ -104,7 +79,7 @@ class AnthropicAPI:
     def __init__(self, api_key):
         self.client = anthropic.Anthropic(api_key=api_key)
 
-    def generate_text(self, prompt: str, system_message: str, max_tokens: int = 1000) -> str:
+    def generate_text(self, prompt: str, system_message: str, max_tokens: int = 1500) -> str:
         """Generate text using the Anthropic API."""
         message = self.client.messages.create(
             model="claude-3-5-sonnet-20240620",
@@ -153,33 +128,55 @@ class HydrologistExpert(Expert):
         """Generate a perceptual model summary for the domain being modelled."""
         summarized_settings = summarize_settings(settings)
         system_message = "You are a world-class hydrologist. Create a concise perceptual model summary for the given domain based on the CONFLUENCE model settings."
-        prompt = f"Based on the following CONFLUENCE model settings, generate a detailed perceptual model summary for the domain being modelled, citing the relevant literature. Include key hydrological processes and their interactions:\n\n{summarized_settings}"
+        prompt = f'''Based on the following CONFLUENCE model domain, generate a detailed and extensive perceptual model summary for the domain being modelled, 
+                     citing the relevant literature and providing a list of references. Include key hydrological processes and their interaction. 
+                     Summarize previous modelling efforts in this basin and their findings. Identify modelling approaches that have provided good results or 
+                     are likely to provide good results. Also identify (if available in the literature) modelling approaches that have not proven fruitful.
+                     :\n\n{summarized_settings}'''
         perceptual_model = self.api.generate_text(prompt, system_message)
         return perceptual_model
 
-class DataPreprocessingExpert(Expert):
-    """Expert in data quality and preprocessing for hydrological models."""
+class DataScienceExpert(Expert):
+    """Expert in data science and preprocessing for hydrological models."""
 
     def __init__(self, api: AnthropicAPI):
-        super().__init__("Data Preprocessing Expert", "data quality and preprocessing for hydrological models", api)
+        super().__init__("Data Science Expert", "data science and preprocessing for hydrological models", api)
 
-class ModelCalibrationExpert(Expert):
+class HydrogeologyExpert(Expert):
     """Expert in parameter estimation and optimization for hydrological models."""
 
     def __init__(self, api: AnthropicAPI):
-        super().__init__("Model Calibration Expert", "parameter estimation and optimization for hydrological models", api)
+        super().__init__("Hydrogeology Expert", "parameter estimation and optimization for hydrological models", api)
+    
+    def generate_perceptual_model(self, settings: Dict[str, Any]) -> str:
+        """Generate a perceptual model summary for the domain being modelled."""
+        summarized_settings = summarize_settings(settings)
+        system_message = "You are a world-class hydrogeologist. Create a concise perceptual model summary for the given domain based on the CONFLUENCE model settings."
+        prompt = f'''Based on the following CONFLUENCE model domain, generate a detailed and extensive perceptual model summary for the domain being modelled, 
+                     citing the relevant literature and providing a list of references. Include key hydrogeolological processes and their interaction. 
+                     Summarize previous modelling efforts in this basin and their findings. Identify modelling approaches that have provided good results or 
+                     are likely to provide good results. Also identify (if available in the literature) modelling approaches that have not proven fruitful.
+                     :\n\n{summarized_settings}'''
+        perceptual_model = self.api.generate_text(prompt, system_message)
+        return perceptual_model
 
-class GeospatialAnalysisExpert(Expert):
-    """Expert in spatial discretization and geofabric setup for hydrological models."""
-
-    def __init__(self, api: AnthropicAPI):
-        super().__init__("Geospatial Analysis Expert", "spatial discretization and geofabric setup for hydrological models", api)
-
-class PerformanceMetricsExpert(Expert):
+class MeteorologicalExpert(Expert):
     """Expert in evaluation of hydrological model performance."""
 
     def __init__(self, api: AnthropicAPI):
-        super().__init__("Performance Metrics Expert", "evaluation of hydrological model performance", api)
+        super().__init__("Meteorological Expert", "evaluation of hydrological model performance", api)
+    
+    def generate_perceptual_model(self, settings: Dict[str, Any]) -> str:
+        """Generate a perceptual model summary for the domain being modelled."""
+        summarized_settings = summarize_settings(settings)
+        system_message = "You are a world-class meteorological. Create a concise perceptual model summary for the given domain based on the CONFLUENCE model settings."
+        prompt = f'''Based on the following CONFLUENCE model domain, generate a detailed and extensive perceptual model summary for the domain being modelled, 
+                     citing the relevant literature and providing a list of references. Include key meteorological processes and their interaction. 
+                     Summarize previous modelling efforts in this basin and their findings. Identify modelling approaches that have provided good results or 
+                     are likely to provide good results. Also identify (if available in the literature) modelling approaches that have not proven fruitful.
+                     :\n\n{summarized_settings}'''
+        perceptual_model = self.api.generate_text(prompt, system_message)
+        return perceptual_model
 
 class Chairperson:
     """Chairperson of the INDRA system, responsible for coordinating experts and generating the final report."""
@@ -301,22 +298,25 @@ class Chairperson:
     def expert_initiation(self, watershed_name: str) -> Tuple[Dict[str, Any], str]:
         """Consult experts to determine optimal initial settings for the given watershed."""
         
-        system_message = "You are the chairperson of INDRA, coordinating a panel of hydrological modeling experts to determine optimal initial settings for a CONFLUENCE model configuration."
+        system_message = '''You are the chairperson of INDRA, coordinating a panel of hydrological modeling experts 
+                            to determine optimal initial settings for a CONFLUENCE model configuration.'''
         
         prompt = f"""
         We are initiating a new CONFLUENCE project for the watershed named: {watershed_name}
 
         As the panel of experts, please suggest optimal initial settings for the following configuration parameters:
 
-        1. HYDROLOGICAL_MODEL (e.g., SUMMA, FLASH)
-        2. ROUTING_MODEL (e.g., mizuroute)
-        3. FORCING_DATASET (e.g., RDRS, ERA5)
-        4. FORCING_START_YEAR and FORCING_END_YEAR
-        5. DOMAIN_DISCRETIZATION method (e.g., elevation, soilclass, landclass)
+        1. HYDROLOGICAL_MODEL (options: SUMMA, FLASH)
+        2. ROUTING_MODEL (options: mizuroute)
+        3. FORCING_DATASET (options: RDRS, ERA5)
+        4. STREAM_THRESHOLD: for domain delineation, assume DEM pixel size of 90m 
+        5. DOMAIN_DISCRETIZATION method (options, elevation, soilclass, landclass)
         6. ELEVATION_BAND_SIZE (if using elevation-based discretization)
-        7. MIN_HRU_SIZE
-        8. POUR_POINT_COORDS coordinates lat/lon to define watershed to delineate must be specified as decimals with 6 digits in the format 'lat/lon'. Select coordinates on the river main step close at estuary or confluence.
-        9. BOUNDING_BOX_COORDS coordinates of the bounding box of the watershed must be specified as decimals with 2 digits in the format 'lat_max/lat_min/lon_max/lon_min'
+        7. MIN_HRU_SIZE: Minimum size of the model domain HRUs, in km2
+        8. POUR_POINT_COORDS: coordinates lat/lon to define watershed to delineate must be specified as decimals with 6 digits 
+                             in the format 'lat/lon'. Select coordinates on the river main step close at estuary or confluence.
+        9. BOUNDING_BOX_COORDS: coordinates of the bounding box of the watershed must be specified as decimals with 2 digits 
+                               in the format 'lat_max/lat_min/lon_max/lon_min'
 
         For each parameter, provide a brief justification for your recommendation.
 
@@ -374,126 +374,398 @@ class INDRA:
         run(control_file_path: Path) -> str: Run the INDRA analysis on the given CONFLUENCE control file.
     """
 
-    def __init__(self, api_key):
+    def __init__(self):
+        """
+        Initialize INDRA with API key from system environment variables.
+        Raises:
+            ValueError: If the required API key is not found in environment variables.
+        """
+        # Get API key from system environment
+        api_key = os.environ.get('ANTHROPIC_API_KEY')
+        
+        if not api_key:
+            raise ValueError(
+                "ANTHROPIC_API_KEY not found in system environment variables. "
+                "Please ensure the API key is properly set in your system PATH."
+            )
+
         self.api = AnthropicAPI(api_key)
         self.experts = [
             HydrologistExpert(self.api),
-            DataPreprocessingExpert(self.api),
-            ModelCalibrationExpert(self.api),
-            GeospatialAnalysisExpert(self.api),
-            PerformanceMetricsExpert(self.api)
+            DataScienceExpert(self.api),
+            HydrogeologyExpert(self.api),
+            MeteorologicalExpert(self.api)
         ]
         self.chairperson = Chairperson(self.experts, self.api)
 
-    def run(self, control_file_path: Optional[Path] = None, confluence_results: Optional[Dict[str, Any]] = None) -> Tuple[Dict[str, str], Dict[str, Any]]:
-        if control_file_path is None:
-            control_file_path = self.initiate_new_project()
+    def _generate_perceptual_models(self, watershed_name: str) -> Dict[str, str]:
+        """
+        Generate perceptual models from each domain expert.
         
-        settings = self.chairperson.load_control_file(control_file_path)
-        synthesis = self.chairperson.consult_experts(settings, confluence_results)
-        report, suggestions = self.chairperson.generate_report(settings, synthesis, confluence_results)
+        Args:
+            watershed_name (str): Name of the watershed being modeled.
         
-        print("\nINDRA Analysis Summary:")
-        print("------------------------")
-        print(f"Analyzed config file: {control_file_path}")
-        print("\nKey points from the analysis:")
-        for i, key_point in enumerate(report['concluded_summary'].split('\n')[:5], 1):  # Print first 5 lines of summary
-            print(f"{i}. {key_point}")
+        Returns:
+            Dict[str, str]: Dictionary containing perceptual models from each expert.
+        """
+        print("Consulting domain experts for perceptual model generation...")
         
-        print("\nSuggestions for improvement:")
-        for param, suggestion in suggestions.items():
-            print(f"{param}: {suggestion}")
+        perceptual_models = {}
+        domain_experts = [expert for expert in self.experts 
+                        if isinstance(expert, (HydrologistExpert, HydrogeologyExpert, MeteorologicalExpert))]
         
-        updated_config = self.chairperson.suggest_changes(settings, suggestions)
-        if updated_config:
-            self.chairperson.save_updated_config(updated_config, control_file_path)
-            print(f"\nUpdated configuration saved to {control_file_path}")
-                    
-        # Generate perceptual model summary
-        hydrologist = next(expert for expert in self.experts if isinstance(expert, HydrologistExpert))
-        perceptual_model = hydrologist.generate_perceptual_model(settings)
+        settings = {"DOMAIN_NAME": watershed_name}  # Minimal settings for perceptual model generation
         
-        # Save the report
-        report_path = Path(os.getcwd()) / "indra_reports" 
-        report_path.mkdir(parents=True, exist_ok=True) 
-        report_name = f"{control_file_path.stem}_INDRA_report.txt"
+        for expert in domain_experts:
+            print(f"\nGenerating {expert.name} perceptual model...")
+            perceptual_models[expert.name] = expert.generate_perceptual_model(settings)
+        
+        return perceptual_models
 
-        with open(report_path / report_name, 'w') as f:
-            f.write("INDRA Analysis Report\n")
-            f.write("=====================\n\n")
-            f.write("1. Concluded Summary\n")
-            f.write("--------------------\n")
-            f.write(report['concluded_summary'])
-            f.write("\n\n2. Panel Expert Discussions\n")
-            f.write("-----------------------------\n")
+    def _save_perceptual_models(self, file_path: Path, perceptual_models: Dict[str, str]):
+        """
+        Save perceptual models to a formatted text file.
+        
+        Args:
+            file_path (Path): Path to save the perceptual models.
+            perceptual_models (Dict[str, str]): Dictionary of perceptual models from each expert.
+        """
+        with open(file_path, 'w') as f:
+            f.write("INDRA Perceptual Models Report\n")
+            f.write("=============================\n\n")
+            
+            for expert_name, model in perceptual_models.items():
+                f.write(f"{expert_name} Perceptual Model\n")
+                f.write("-" * (len(expert_name) + 17) + "\n")
+                f.write(model)
+                f.write("\n\n")
+
+    def _save_synthesis_report(self, report: Dict[str, str], suggestions: Dict[str, Any], 
+                          watershed_name: str, report_path: Path):
+        """
+        Save the synthesis report for an existing project.
+        
+        Args:
+            report (Dict[str, str]): The generated report
+            suggestions (Dict[str, Any]): Configuration suggestions
+            watershed_name (str): Name of the watershed
+            report_path (Path): Directory to save the report
+        """
+        synthesis_file = report_path / f"synthesis_report_{watershed_name}.txt"
+        
+        with open(synthesis_file, 'w') as f:
+            f.write(f"INDRA Synthesis Report for {watershed_name}\n")
+            f.write("=" * 50 + "\n\n")
+            
+            f.write("Expert Panel Discussion Summary\n")
+            f.write("-" * 28 + "\n")
             f.write(report['panel_summary'])
-            f.write("\n\n3. Perceptual Model Summary\n")
-            f.write("-----------------------------\n")
-            f.write(perceptual_model)
-            f.write("\n\n4. Suggestions\n")
-            f.write("---------------\n")
-            for suggestion in suggestions:
-                f.write(f"- {suggestion}\n")
+            f.write("\n\n")
+            
+            f.write("Concluded Summary\n")
+            f.write("-" * 16 + "\n")
+            f.write(report['concluded_summary'])
+            f.write("\n\n")
+            
+            f.write("Configuration Suggestions\n")
+            f.write("-" * 24 + "\n")
+            for param, suggestion in suggestions.items():
+                f.write(f"{param}: {suggestion}\n")
         
-        print(f"INDRA report saved to: {report_path / report_name}")
+        print(f"\nSynthesis report saved to: {synthesis_file}")
 
-        if updated_config:
-            # Run CONFLUENCE with updated config
+    def run(self, control_file_path: Optional[Path] = None, confluence_results: Optional[Dict[str, Any]] = None) -> Tuple[Dict[str, str], Dict[str, Any]]:
+        """
+        Run the INDRA analysis with perceptual model generation as first step.
+        
+        Args:
+            control_file_path (Optional[Path]): Path to existing config file. If None, initiates new project.
+            confluence_results (Optional[Dict[str, Any]]): Results from previous CONFLUENCE run if available.
+        
+        Returns:
+            Tuple[Dict[str, str], Dict[str, Any]]: Analysis results and suggestions
+        """
+        # Step 1: Get watershed name and determine if this is a new project
+        is_new_project = control_file_path is None
+        
+        if is_new_project:
+            print("Initiating a new CONFLUENCE project.")
+            watershed_name = input("Enter the name of the watershed you want to model: ")
+        else:
+            settings = self.chairperson.load_control_file(control_file_path)
+            watershed_name = settings.get('DOMAIN_NAME')
+
+        # Step 2: Generate and save domain perceptual models
+        print("\nGenerating perceptual models for the domain...")
+        perceptual_models = self._generate_perceptual_models(watershed_name)
+        
+        # Create report directory if it doesn't exist
+        report_path = Path(os.getcwd()) / "indra_reports"
+        report_path.mkdir(parents=True, exist_ok=True)
+        
+        # Save perceptual models to file
+        perceptual_model_file = report_path / f"perceptual_model_{watershed_name}.txt"
+        self._save_perceptual_models(perceptual_model_file, perceptual_models)
+        
+        print(f"\nPerceptual models have been generated and saved to: {perceptual_model_file}")
+        
+        # Prompt user to continue
+        if input("\nWould you like to continue with configuration process? (y/n): ").lower() != 'y':
+            print("Workflow stopped after perceptual model generation.")
+            return {}, {}
+
+        if is_new_project:
+            # Handle new project initialization
+            control_file_path, expert_config = self._initialize_new_project(watershed_name)
+            print("\nNew project initialization completed.")
+            
+            # Load the initial configuration
+            settings = self.chairperson.load_control_file(control_file_path)
+            
+            # Allow user to modify initial configuration
+            if input("\nWould you like to modify the INDRA-suggested configuration? (y/n): ").lower() == 'y':
+                updated_settings = self._modify_configuration(settings, expert_config)
+                if updated_settings:
+                    self._create_config_file_from_template(
+                        template_path=Path(__file__).parent / '0_config_files' / 'config_template.yaml',
+                        output_path=control_file_path,
+                        watershed_name=watershed_name,
+                        expert_config={k: v for k, v in updated_settings.items() if k in expert_config}
+                    )
+                    settings = updated_settings
+                    print(f"\nUpdated configuration saved to {control_file_path}")
+            
+            # Run CONFLUENCE with initial configuration
+            print("\nRunning CONFLUENCE with initial configuration...")
             confluence_results = self.run_confluence(control_file_path)
             
-            # Analyze CONFLUENCE results
-            confluence_analysis = self.analyze_confluence_results(confluence_results)
-            print("\nCONFLUENCE Run Analysis:")
-            print(confluence_analysis)
-
-        return confluence_analysis
+            if confluence_results:
+                confluence_analysis = self.analyze_confluence_results(confluence_results)
+                print("\nCONFLUENCE Run Analysis:")
+                print(confluence_analysis)
+                return confluence_analysis
+            
+        else:
+            # Existing project workflow - proceed with expert analysis
+            synthesis = self.chairperson.consult_experts(settings, confluence_results)
+            report, suggestions = self.chairperson.generate_report(settings, synthesis, confluence_results)
+            
+            # Save synthesis report
+            self._save_synthesis_report(report, suggestions, watershed_name, report_path)
+            
+            print("\nINDRA Analysis Summary:")
+            print("------------------------")
+            print(f"Analyzed config file: {control_file_path}")
+            print("\nKey points from the analysis:")
+            for i, key_point in enumerate(report['concluded_summary'].split('\n')[:10], 1):
+                print(f"{i}. {key_point}")
+            
+            print("\nSuggestions for improvement:")
+            for param, suggestion in suggestions.items():
+                print(f"{param}: {suggestion}")
     
-    def initiate_new_project(self) -> Path:
-        print("Initiating a new CONFLUENCE project.")
-        watershed_name = input("Enter the name of the watershed you want to model: ")
-
-        config, justification = self.chairperson.expert_initiation(watershed_name)
-
-        # Add default parameters
-        default_params = {
-            "DOMAIN_NAME": watershed_name,
-            "CONFLUENCE_DATA_DIR": "/Users/darrieythorsson/compHydro/data/CONFLUENCE_data",
-            "CONFLUENCE_CODE_DIR": "/Users/darrieythorsson/compHydro/code/CONFLUENCE",
-            "POUR_POINT_SHP_PATH": "default",
-            "POUR_POINT_SHP_NAME": "default",
-            "DOMAIN_DEFINITION_METHOD": "delineate",
-            "GEOFABRIC_TYPE": "TDX",
-            "STREAM_THRESHOLD": 5000,
-            "LUMPED_WATERSHED_METHOD": "pysheds",
-            "CLEANUP_INTERMEDIATE_FILES": True,
-            "DELINEATE_BY_POURPOINT": True,
-            "OUTPUT_BASINS_PATH": "default",
-            "OUTPUT_RIVERS_PATH": "default",
-            "DEM_PATH": "default",
-            "DEM_NAME": "elevation.tif",
-            "SOURCE_GEOFABRIC_BASINS_PATH": "/Users/darrieythorsson/compHydro/data/CWARHM_data/domain_NorthAmerica/shapefiles/catchment/7020021430-basins.gpkg",
-            "SOURCE_GEOFABRIC_RIVERS_PATH": "/Users/darrieythorsson/compHydro/data/CWARHM_data/domain_NorthAmerica/shapefiles/river_network/7020021430-streamnet.gpkg",
-            "TAUDEM_DIR": "default",
-            "OUTPUT_DIR": "default",
-            "CATCHMENT_PLOT_DIR": "default"
-
-
-        }
+    def _modify_configuration(self, settings: Dict[str, Any], expert_config: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Allow user to modify only INDRA-suggested configuration settings interactively.
         
-        # Update the config with default parameters
-        config.update(default_params)
-        config_path = Path("0_config_files") 
-        config_path.mkdir(parents=True, exist_ok=True) 
-        config_name = "config_active.yaml"
-        with open(config_path / config_name, 'w') as f:
-            yaml.dump(config, f)
+        Args:
+            settings (Dict[str, Any]): Current configuration settings
+            expert_config (Dict[str, Any]): Expert-suggested configurations
+            
+        Returns:
+            Optional[Dict[str, Any]]: Modified settings if changes were made, None otherwise
+        """
+        updated_settings = settings.copy()
         
-        print(f"Initial configuration saved to {config_path / config_name}")
-        print("\nJustification for the chosen settings:")
-        print(justification)
+        print("\nINDRA-suggested configuration settings:")
+        modifiable_settings = {k: v for k, v in updated_settings.items() if k in expert_config}
         
-        return config_path / config_name
+        for key, value in modifiable_settings.items():
+            print(f"{key}: {value}")
+        
+        while True:
+            print("\nEnter the setting key you'd like to modify (or 'done' to finish, 'cancel' to discard changes):")
+            key = input().strip()
+            
+            if key.lower() == 'done':
+                return updated_settings
+            elif key.lower() == 'cancel':
+                return None
+            
+            if key in modifiable_settings:
+                current_value = updated_settings[key]
+                print(f"Current value: {current_value}")
+                print(f"Enter new value for {key}:")
+                new_value = input().strip()
+                
+                # Try to preserve the type of the original value
+                try:
+                    if isinstance(current_value, bool):
+                        new_value = new_value.lower() in ('true', 'yes', '1', 'on')
+                    elif isinstance(current_value, int):
+                        new_value = int(new_value)
+                    elif isinstance(current_value, float):
+                        new_value = float(new_value)
+                    elif isinstance(current_value, str) and ' ' in new_value:
+                        new_value = f"'{new_value}'"
+                except ValueError:
+                    print(f"Warning: Could not convert value to type {type(current_value).__name__}, storing as string")
+                
+                updated_settings[key] = new_value
+                print(f"Updated {key} to: {new_value}")
+            else:
+                print(f"Setting '{key}' is not an INDRA-suggested configuration and cannot be modified.")
+                print("Modifiable settings are:", ', '.join(modifiable_settings.keys()))
+        
+        return updated_settings
+                
+    def _initialize_new_project(self, watershed_name: str) -> Tuple[Path, Dict[str, Any]]:
+        """
+        Initialize a new CONFLUENCE project with expert-suggested configuration.
+        Uses a template config file as base and updates it with expert suggestions.
+        
+        Args:
+            watershed_name (str): Name of the watershed being modeled.
+        
+        Returns:
+            Tuple[Path, Dict[str, Any]]: Path to the created configuration file and expert config dictionary
+        """
+        # Get expert suggestions for the configuration
+        expert_config, justification = self.chairperson.expert_initiation(watershed_name)
+        
+        # Save the justification to a file
+        report_path = Path(os.getcwd()) / "indra_reports"
+        report_path.mkdir(parents=True, exist_ok=True)
+        rationale_file = report_path / f"initial_decision_rationale_{watershed_name}.txt"
+        
+        with open(rationale_file, 'w') as f:
+            f.write(f"INDRA Initial Configuration Decisions for {watershed_name}\n")
+            f.write("=" * 50 + "\n\n")
+            f.write("Expert-Suggested Configuration Parameters:\n")
+            f.write("-" * 35 + "\n")
+            for key, value in expert_config.items():
+                f.write(f"{key}: {value}\n")
+            f.write("\nJustification:\n")
+            f.write("-" * 13 + "\n")
+            f.write(justification)
+        
+        print(f"\nConfiguration rationale saved to: {rationale_file}")
+        
+        try:
+            # Create config directory
+            config_path = Path("0_config_files")
+            config_path.mkdir(parents=True, exist_ok=True)
+            config_file_path = config_path / f"config_{watershed_name}.yaml"
+            
+            # Load and process template while preserving structure and comments
+            self._create_config_file_from_template(
+                template_path=Path(__file__).parent / '0_config_files' / 'config_template.yaml',
+                output_path=config_file_path,
+                watershed_name=watershed_name,
+                expert_config=expert_config
+            )
+            
+            # Create symbolic link to config_active.yaml
+            active_config_path = config_path / "config_active.yaml"
+            if active_config_path.exists():
+                active_config_path.unlink()
+            active_config_path.symlink_to(config_file_path.name)
+            
+            return config_file_path, expert_config  # Now returning both values
+
+        except Exception as e:
+            print(f"Error initializing new project configuration: {str(e)}")
+            raise
     
+    def _create_config_file(self, template_config: Dict[str, Any], expert_config: Dict[str, Any], 
+                       output_path: Path, header: str = ''):
+        """
+        Helper method to create a new configuration file with proper formatting.
+        
+        Args:
+            template_config (Dict[str, Any]): Base configuration from template
+            expert_config (Dict[str, Any]): Expert-suggested configuration
+            output_path (Path): Path to save the new configuration file
+            header (str): Header comments to preserve from template
+        """
+        # Update template with expert configurations
+        final_config = template_config.copy()
+        for key, value in expert_config.items():
+            if key in final_config:
+                final_config[key] = value
+        
+        # Write configuration file
+        with open(output_path, 'w') as f:
+            # Write header if provided
+            if header:
+                f.write(header)
+                f.write('\n')
+            
+            # Write each section maintaining the template structure
+            current_section = None
+            for key, value in final_config.items():
+                # Check if this is a new section
+                if '### ===' in key:
+                    current_section = key
+                    f.write(f"\n{key}\n")
+                    continue
+                
+                # Write the configuration entry
+                if isinstance(value, str):
+                    f.write(f"{key}: {value}  # Original template comment preserved\n")
+                else:
+                    f.write(f"{key}: {value}\n")
+
+    def _create_config_file_from_template(self, template_path: Path, output_path: Path, 
+                                    watershed_name: str, expert_config: Dict[str, Any]):
+        """
+        Create a new configuration file from template while preserving structure and comments.
+        
+        Args:
+            template_path (Path): Path to template file
+            output_path (Path): Path to save new config file
+            watershed_name (str): Name of the watershed
+            expert_config (Dict[str, Any]): Expert-suggested configurations
+        """
+        if not template_path.exists():
+            raise FileNotFoundError(f"Configuration template not found at: {template_path}")
+        
+        # Read template file preserving all lines
+        with open(template_path, 'r') as f:
+            template_lines = f.readlines()
+        
+        # Update expert config with domain name
+        expert_config['DOMAIN_NAME'] = watershed_name
+        
+        # Process template line by line
+        with open(output_path, 'w') as f:
+            current_line = ''
+            
+            for line in template_lines:
+                # Preserve comment lines and section headers
+                if line.strip().startswith('#') or line.strip().startswith('### ==='):
+                    f.write(line)
+                    continue
+                    
+                # Process configuration lines
+                if ':' in line:
+                    key = line.split(':')[0].strip()
+                    if key in expert_config:
+                        # Preserve any inline comments
+                        comment = line.split('#')[1].strip() if '#' in line else ''
+                        value = expert_config[key]
+                        if isinstance(value, str):
+                            value = f"'{value}'" if ' ' in value else value
+                        new_line = f"{key}: {value}"
+                        if comment:
+                            new_line += f"  # {comment}"
+                        f.write(new_line + '\n')
+                    else:
+                        # Keep original line for non-expert configs
+                        f.write(line)
+                else:
+                    f.write(line)
+
     def run_confluence(self, config_path: Path) -> Dict[str, Any]:
         """
         Run CONFLUENCE with the given configuration file.
@@ -541,8 +813,6 @@ class INDRA:
 
         analysis = self.api.generate_text(prompt, system_message, max_tokens=500)
         return analysis
-    
-    
  
 def summarize_settings(settings: Dict[str, Any], max_length: int = 2000) -> str:
     """Summarize the settings to a maximum length."""
@@ -559,19 +829,66 @@ def summarize_settings(settings: Dict[str, Any], max_length: int = 2000) -> str:
     
     return summarized
 
-
 # Usage
 if __name__ == "__main__":
-    api_key = "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"
-    indra = INDRA(api_key)
-
-    # Ask user if they want to use an existing config or create a new one
-    use_existing = input("Do you want to use an existing config file? (y/n): ").lower() == 'y'
-    
-    if use_existing:
-        control_file_path = control_file_path = Path("/Users/darrieythorsson/compHydro/code/INDRA/0_config_files/config_active.yaml")
-    else:
-        control_file_path = None  # This will trigger the creation of a new config
-    
-    confluence_results = None  # Replace with actual results if available
-    confluence_analysis = indra.run(control_file_path, confluence_results)
+    try:
+        indra = INDRA()
+        
+        use_existing = input("Do you want to use an existing config file? (y/n): ").lower() == 'y'
+        
+        if use_existing:
+            while True:
+                print("\nEnter the path to your configuration file:")
+                print("(You can use absolute path or relative path from current directory)")
+                control_file_input = input().strip()
+                
+                # Convert string to Path object
+                control_file_path = Path(control_file_input).resolve()
+                
+                # Validate the path
+                if not control_file_path.exists():
+                    print(f"\nError: File not found: {control_file_path}")
+                    retry = input("Would you like to try another path? (y/n): ").lower() == 'y'
+                    if not retry:
+                        print("Exiting program.")
+                        sys.exit()
+                elif not control_file_path.suffix in ['.yaml', '.yml']:
+                    print(f"\nError: File must be a YAML file (.yaml or .yml)")
+                    retry = input("Would you like to try another path? (y/n): ").lower() == 'y'
+                    if not retry:
+                        print("Exiting program.")
+                        sys.exit()
+                else:
+                    try:
+                        # Validate YAML format
+                        with open(control_file_path, 'r') as f:
+                            yaml.safe_load(f)
+                        print(f"\nUsing configuration file: {control_file_path}")
+                        break
+                    except yaml.YAMLError:
+                        print(f"\nError: Invalid YAML format in {control_file_path}")
+                        retry = input("Would you like to try another path? (y/n): ").lower() == 'y'
+                        if not retry:
+                            print("Exiting program.")
+                            sys.exit()
+        else:
+            control_file_path = None  # This will trigger the creation of a new config
+        
+        confluence_results = None  # Replace with actual results if available
+        confluence_analysis = indra.run(control_file_path, confluence_results)
+        
+    except ValueError as e:
+        print(f"Error: {e}")
+        print("\nTo set up your API key in the system environment:")
+        print("\nFor Unix-like systems (Linux/Mac):")
+        print("1. Add this line to your ~/.bashrc or ~/.zshrc:")
+        print('   export ANTHROPIC_API_KEY="your-api-key-here"')
+        print("2. Run: source ~/.bashrc (or source ~/.zshrc)")
+        print("\nFor Windows:")
+        print("1. Open System Properties -> Advanced -> Environment Variables")
+        print("2. Add a new User Variable:")
+        print("   Name: ANTHROPIC_API_KEY")
+        print("   Value: your-api-key")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        print(f"Error details: {str(e)}")

@@ -1,0 +1,36 @@
+INDRA Initial Configuration Decisions for Amazon
+==================================================
+
+Expert-Suggested Configuration Parameters:
+-----------------------------------
+HYDROLOGICAL_MODEL: SUMMA
+ROUTING_MODEL: mizuroute
+FORCING_DATASET: ERA5
+STREAM_THRESHOLD: 100
+DOMAIN_DISCRETIZATION: elevation
+ELEVATION_BAND_SIZE: 200
+MIN_HRU_SIZE: 25
+POUR_POINT_COORDS: -0.042668/-51.186017
+BOUNDING_BOX_COORDS: 5.27/-20.47/-79.65/-44.39
+
+Justification:
+-------------
+1. HYDROLOGICAL_MODEL: SUMMA was chosen for its flexibility in representing diverse hydrological processes, which is crucial for the complex Amazon basin.
+
+2. ROUTING_MODEL: mizuroute is recommended for its efficiency in handling large river networks like the Amazon.
+
+3. FORCING_DATASET: ERA5 provides high-quality, global coverage reanalysis data suitable for the vast Amazon region.
+
+4. STREAM_THRESHOLD: 100 pixels (8.1 km²) balances computational efficiency with adequate representation of the dense Amazon river network.
+
+5. DOMAIN_DISCRETIZATION: Elevation-based discretization captures the significant topographic variations in the Amazon basin.
+
+6. ELEVATION_BAND_SIZE: 200m bands provide a good balance between detail and computational efficiency for the Amazon's varied terrain.
+
+7. MIN_HRU_SIZE: 25 km² ensures computational efficiency while maintaining sufficient spatial resolution for the large Amazon basin.
+
+8. POUR_POINT_COORDS: The coordinates (-0.042668/-51.186017) represent a point near the Amazon River's mouth, capturing the entire basin.
+
+9. BOUNDING_BOX_COORDS: The coordinates (5.27/-20.47/-79.65/-44.39) encompass the entire Amazon basin, including all major tributaries.
+
+These settings provide a robust initial configuration for modeling the Amazon watershed, balancing computational efficiency with the need for detailed representation of this complex and vast river system. The choices reflect the unique characteristics of the Amazon, including its size, diverse topography, and dense river network.
