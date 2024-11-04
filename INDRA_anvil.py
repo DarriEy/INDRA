@@ -183,7 +183,7 @@ def test_anvil_gpt():
             "FORCING_DATASET": "ERA5"
         }
         
-        expert = Expert("Test Expert", "hydrology", api)
+        expert = Expert("Hydrologist Expert", "hydrology", api)
         analysis = expert.analyze_settings(test_settings)
         print("\nAnalysis:", analysis['full_analysis'])
         
