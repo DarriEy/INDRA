@@ -79,7 +79,7 @@ class AnthropicAPI:
     def __init__(self, api_key):
         self.client = anthropic.Anthropic(api_key=api_key)
 
-    def generate_text(self, prompt: str, system_message: str, max_tokens: int = 1500) -> str:
+    def generate_text(self, prompt: str, system_message: str, max_tokens: int = 1750) -> str:
         """Generate text using the Anthropic API."""
         message = self.client.messages.create(
             model="claude-3-5-sonnet-20240620",
