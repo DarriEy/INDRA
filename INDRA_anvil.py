@@ -275,10 +275,10 @@ class Chairperson:
             "HYDROLOGICAL_MODEL": "value",
             "ROUTING_MODEL": "value",
             "FORCING_DATASET": "value",
-            "STREAM_THRESHOLD": value,
+            "STREAM_THRESHOLD": "value",
             "DOMAIN_DISCRETIZATION": "value",
-            "ELEVATION_BAND_SIZE": value,
-            "MIN_HRU_SIZE": value,
+            "ELEVATION_BAND_SIZE": "value",
+            "MIN_HRU_SIZE": "value",
             "POUR_POINT_COORDS": "value",
             "BOUNDING_BOX_COORDS": "value"
         }
