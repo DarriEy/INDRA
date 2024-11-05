@@ -805,8 +805,12 @@ class INDRA:
             Dict[str, Any]: Results from the CONFLUENCE run.
         """
         try:
-            # Create SLURM submission script
-            slurm_script = self._create_slurm_script(config_path)
+            # Read the configuration file to get necessary parameters
+            with open(config_path, 'r') as f:
+                config = yaml.safe_load(f)
+                
+            # Create SLURM submission script using parameters from config file
+            slurm_script = self._create_slurm_script(config_path, config)
             
             # Submit job
             submit_cmd = f"sbatch {slurm_script}"
@@ -819,39 +823,42 @@ class INDRA:
             # Option 1: Return immediately with job ID
             return {"job_id": job_id, "status": "submitted"}
             
-            # Option 2: Wait for job completion and return results
-            # while True:
-            #     status = self._check_job_status(job_id)
-            #     if status == "COMPLETED":
-            #         return self._get_confluence_results(config_path)
-            #     elif status in ["FAILED", "CANCELLED"]:
-            #         raise RuntimeError(f"CONFLUENCE job {job_id} {status}")
-            #     time.sleep(60)  # Check every minute
-                
         except subprocess.CalledProcessError as e:
             self.logger.error(f"Error submitting CONFLUENCE job: {str(e)}")
             return {"error": str(e)}
             
-    def _create_slurm_script(self, config_path: Path) -> Path:
+    def _create_slurm_script(self, config_path: Path, config: Dict[str, Any]) -> Path:
         """
         Create a SLURM submission script for CONFLUENCE.
         
         Args:
             config_path (Path): Path to CONFLUENCE configuration file
+            config (Dict[str, Any]): Configuration dictionary containing parameters
             
         Returns:
             Path: Path to created SLURM script
         """
         script_path = config_path.parent / "run_confluence.sh"
         
+        # Extract parameters from config
+        domain_name = config.get('DOMAIN_NAME', 'unknown_domain')
+        mpi_processes = config.get('MPI_PROCESSES', 1)
+        tool_account = config.get('TOOL_ACCOUNT', '')  # For the SLURM account
+        
         script_content = f"""#!/bin/bash
-    #SBATCH --job-name=CONFLUENCE_{self.config.get('DOMAIN_NAME')}
+    #SBATCH --job-name=CONFLUENCE_{domain_name}
     #SBATCH --time=24:00:00
-    #SBATCH --ntasks={self.config.get('MPI_PROCESSES', 1)}
+    #SBATCH --ntasks={mpi_processes}
     #SBATCH --mem=64G
     #SBATCH --output=confluence_%j.out
     #SBATCH --error=confluence_%j.err
+    """
 
+        # Add account if specified
+        if tool_account:
+            script_content += f"#SBATCH --account={tool_account}\n"
+
+        script_content += f"""
     # Load required modules
     module load python
 
