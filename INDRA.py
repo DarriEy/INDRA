@@ -310,13 +310,12 @@ class Chairperson:
         1. HYDROLOGICAL_MODEL (options: SUMMA, FLASH)
         2. ROUTING_MODEL (options: mizuroute)
         3. FORCING_DATASET (options: RDRS, ERA5)
-        4. STREAM_THRESHOLD: for domain delineation, assume DEM pixel size of 90m 
-        5. DOMAIN_DISCRETIZATION method (options, elevation, soilclass, landclass)
-        6. ELEVATION_BAND_SIZE (if using elevation-based discretization)
-        7. MIN_HRU_SIZE: Minimum size of the model domain HRUs, in km2
-        8. POUR_POINT_COORDS: coordinates lat/lon to define watershed to delineate must be specified as decimals with 6 digits 
+        4. DOMAIN_DISCRETIZATION method (options, elevation, soilclass, landclass)
+        5. ELEVATION_BAND_SIZE (if using elevation-based discretization)
+        6. MIN_HRU_SIZE: Minimum size of the model domain HRUs, in km2 recommended 10 km2 for large watersheds and 1 km2 for small watersheds
+        7. POUR_POINT_COORDS: coordinates lat/lon to define watershed to delineate must be specified as decimals with 6 digits 
                              in the format 'lat/lon'. Select coordinates on the river main step close at estuary or confluence.
-        9. BOUNDING_BOX_COORDS: coordinates of the bounding box of the watershed must be specified as decimals with 2 digits 
+        8. BOUNDING_BOX_COORDS: coordinates of the bounding box of the watershed must be specified as decimals with 2 digits 
                                in the format 'lat_max/lon_min/lat_min/lon_max.'
 
         For each parameter, provide a brief justification for your recommendation.
