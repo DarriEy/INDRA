@@ -86,9 +86,9 @@ TAUDEM_DIR: default                                            # If 'default', u
 OUTPUT_DIR: default                                            # If 'default', uses 'root_path/domain_[name]/shapefiles/r
 CATCHMENT_PLOT_DIR: default                                    # Directory to output plots of domain catchment
 SOIL_CLASS_PATH: default                                       # Path to soil classification raster. If 'default', uses root_path/domain_[name]/attributes/soilclass
-SOIL_CLASS_NAME: domain_Chena_soil_classes.tif                 # Name of soil classification raster
+SOIL_CLASS_NAME: default                                       # Name of soil classification raster
 LAND_CLASS_PATH: default                                       # Path to land classification raster. If 'default', uses root_path/domain_[name]/attributes/landclass      
-LAND_CLASS_NAME: domain_Chena_land_classes.tif                 # Name of land classification raster
+LAND_CLASS_NAME: defalt                                        # Name of land classification raster
 RADIATION_PATH: default                                        # Path to radiation classification raster. If 'default', uses root_path/domain_[name]/attributes/radiation 
 
 # Tool paths
