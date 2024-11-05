@@ -873,8 +873,8 @@ class INDRA:
         script_path.chmod(0o755)
         
         # Copy run_confluence.py to same directory as SLURM script
-        run_script_source = Path(__file__).parent / 'run_confluence.py'
-        run_script_dest = config_path.parent / 'run_confluence.py'
+        run_script_source = Path(__file__).parent.parent / 'run_confluence.py'
+        run_script_dest = config_path.parent.parent / 'run_confluence.py'
         
         import shutil
         shutil.copy2(run_script_source, run_script_dest)
