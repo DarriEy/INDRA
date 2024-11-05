@@ -858,11 +858,9 @@ class INDRA:
 
         script_content += f"""
     # Load required modules
-    module load StdEnv/2023
-    module load python/3.11.5
-    module load gdal/3.7.2
-    module load proj/9.3.0
-    module load geos/3.12.0
+    module restore confluence_modules
+
+    source /home/darri/code/confluence_env/bin/activate
 
     # Run CONFLUENCE script
     python run_confluence.py {config_path}
