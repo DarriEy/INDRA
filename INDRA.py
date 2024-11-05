@@ -818,12 +818,12 @@ class INDRA:
             
             # Extract job ID
             job_id = result.stdout.strip().split()[-1]
-            self.logger.info(f"Submitted CONFLUENCE job with ID: {job_id}")
+            print(f"Submitted CONFLUENCE job with ID: {job_id}")
             
             return {"job_id": job_id, "status": "submitted"}
             
         except subprocess.CalledProcessError as e:
-            self.logger.error(f"Error submitting CONFLUENCE job: {str(e)}")
+            print(f"Error submitting CONFLUENCE job: {str(e)}")
             return {"error": str(e)}
 
     def _create_slurm_script(self, config_path: Path, config: Dict[str, Any]) -> Path:
