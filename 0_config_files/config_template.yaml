@@ -100,7 +100,7 @@ DATATOOL_CACHE: /home/darri/cache/                             # Cache directory
 TOOL_ACCOUNT: def-mclark-ab                                    # HPC account for running datatool
 GISTOOL_DATASET_ROOT: /project/rrg-mclark/data/geospatial-data/         # Path to gistool datasets root directory
 GISTOOL_LIB_PATH: /project/rrg-mclark/lib/                     # Path to gistool libraries
-TOOL_CACHE: $SLURM_TMPDIR                                      # Path to gistool cache directory
+TOOL_CACHE: $HOME/TMPDIR                                      # Path to gistool cache directory
 EASYMORE_CACHE: /home/darri/easymore/                          # Path to easymore cache directory
 EASYMORE_JOB_CONF: "installs/MAF/02_model_agnostic_component/easymore-job.slurm" #Path to easymore job config
 
