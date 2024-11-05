@@ -10,7 +10,7 @@
 module restore confluence_modules
 
 
-source /home/darri/confluence_env/bin/activate
+source /home/darri/code/confluence_env/bin/activate
 
 # Your commands here
 
