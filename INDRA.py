@@ -848,7 +848,7 @@ class INDRA:
     #SBATCH --job-name=CONFLUENCE_{domain_name}
     #SBATCH --time=24:00:00
     #SBATCH --ntasks={mpi_processes}
-    #SBATCH --mem=64G
+    #SBATCH --mem-per-cpu=8G
     #SBATCH --output=confluence_%j.out
     #SBATCH --error=confluence_%j.err
     """
