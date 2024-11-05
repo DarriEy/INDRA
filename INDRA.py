@@ -316,7 +316,7 @@ class Chairperson:
         8. POUR_POINT_COORDS: coordinates lat/lon to define watershed to delineate must be specified as decimals with 6 digits 
                              in the format 'lat/lon'. Select coordinates on the river main step close at estuary or confluence.
         9. BOUNDING_BOX_COORDS: coordinates of the bounding box of the watershed must be specified as decimals with 2 digits 
-                               in the format 'lat_max/lat_min/lon_max/lon_min'
+                               in the format 'lat_max/lon_min/lat_min/lon_max.'
 
         For each parameter, provide a brief justification for your recommendation.
 
