@@ -818,13 +818,13 @@ class INDRA:
             
             # Extract job ID
             job_id = result.stdout.strip().split()[-1]
-            self.logger.info(f"Submitted CONFLUENCE job with ID: {job_id}")
+            print(f"Submitted CONFLUENCE job with ID: {job_id}")
             
             # Option 1: Return immediately with job ID
             return {"job_id": job_id, "status": "submitted"}
             
         except subprocess.CalledProcessError as e:
-            self.logger.error(f"Error submitting CONFLUENCE job: {str(e)}")
+            print(f"Error submitting CONFLUENCE job: {str(e)}")
             return {"error": str(e)}
             
     def _create_slurm_script(self, config_path: Path, config: Dict[str, Any]) -> Path:
@@ -882,6 +882,7 @@ class INDRA:
         cmd = f"sacct -j {job_id} --format=State --noheader"
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
         return result.stdout.strip()
+    
     def analyze_confluence_results(self, confluence_results: Dict[str, Any]) -> str:
         """
         Analyze the results from a CONFLUENCE run.
