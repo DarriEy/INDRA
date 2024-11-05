@@ -79,7 +79,7 @@ RIVER_NETWORK_SHP_SLOPE: Slope                                 # Name of the slo
 OUTPUT_BASINS_PATH: default                                    # If 'default', uses 'root_path/domain_[name]/shapefiles/river_basins/[domain_name]_riverBasins.shp'
 OUTPUT_RIVERS_PATH: default                                    # If 'default', uses 'root_path/domain_[name]/shapefiles/river_network/[domain_name]_riverNetwork.shp'
 DEM_PATH: default                                              # If 'default', uses 'root_path/domain_[name]/attributes/elevation/dem/'
-DEM_NAME: domain_Chena_elv.tif                                 # Name of elevation dem tiff
+DEM_NAME: default                                              # Name of elevation dem tiff
 SOURCE_GEOFABRIC_BASINS_PATH: /project/6079554/data/geospatial-data/MERIT-Basins/MERIT_Hydro_v07_Basins_v01_bugfix1/pfaf_level_02/cat_pfaf_71_MERIT_Hydro_v07_Basins_v01_bugfix1.shp                                   # Path to source geofabric basins
 SOURCE_GEOFABRIC_RIVERS_PATH: /project/6079554/data/geospatial-data/MERIT-Basins/MERIT_Hydro_v07_Basins_v01_bugfix1/pfaf_level_02/riv_pfaf_71_MERIT_Hydro_v07_Basins_v01_bugfix1.shp                                  # Path to source geofabric rivers
 TAUDEM_DIR: default                                            # If 'default', uses 'root_path/installs/TauDEM 

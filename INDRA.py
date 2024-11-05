@@ -657,7 +657,7 @@ class INDRA:
             config_path = Path("0_config_files")
             config_path.mkdir(parents=True, exist_ok=True)
             config_file_path = config_path / f"config_{watershed_name}.yaml"
-            
+            print(config_file_path)
             # Load and process template while preserving structure and comments
             self._create_config_file_from_template(
                 template_path=Path(__file__).parent / '0_config_files' / 'config_template.yaml',
@@ -665,13 +665,13 @@ class INDRA:
                 watershed_name=watershed_name,
                 expert_config=expert_config
             )
-            
+            print('config file created from template')
             # Create symbolic link to config_active.yaml
             active_config_path = config_path / "config_active.yaml"
             if active_config_path.exists():
                 active_config_path.unlink()
             active_config_path.symlink_to(config_file_path.name)
-            
+            print('symlink created')
             return config_file_path, expert_config  # Now returning both values
 
         except Exception as e:

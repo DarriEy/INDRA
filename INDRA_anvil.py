@@ -267,7 +267,7 @@ class Chairperson:
         6. ELEVATION_BAND_SIZE
         7. MIN_HRU_SIZE
         8. POUR_POINT_COORDS (lat/lon)
-        9. BOUNDING_BOX_COORDS (lat_max/lat_min/lon_max/lon_min)
+        9. BOUNDING_BOX_COORDS (lat_max/lon_min/lat_min/lon_max.)
 
         Your response MUST follow this EXACT format (including the triple backticks):
         ```python
