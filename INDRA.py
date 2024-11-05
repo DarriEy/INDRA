@@ -809,7 +809,7 @@ class INDRA:
             with open(config_path, 'r') as f:
                 config = yaml.safe_load(f)
                 
-            # Create SLURM submission script using parameters from config file
+            # Create SLURM submission script
             slurm_script = self._create_slurm_script(config_path, config)
             
             # Submit job
@@ -818,15 +818,14 @@ class INDRA:
             
             # Extract job ID
             job_id = result.stdout.strip().split()[-1]
-            print(f"Submitted CONFLUENCE job with ID: {job_id}")
+            self.logger.info(f"Submitted CONFLUENCE job with ID: {job_id}")
             
-            # Option 1: Return immediately with job ID
             return {"job_id": job_id, "status": "submitted"}
             
         except subprocess.CalledProcessError as e:
-            print(f"Error submitting CONFLUENCE job: {str(e)}")
+            self.logger.error(f"Error submitting CONFLUENCE job: {str(e)}")
             return {"error": str(e)}
-            
+
     def _create_slurm_script(self, config_path: Path, config: Dict[str, Any]) -> Path:
         """
         Create a SLURM submission script for CONFLUENCE.
@@ -843,7 +842,7 @@ class INDRA:
         # Extract parameters from config
         domain_name = config.get('DOMAIN_NAME', 'unknown_domain')
         mpi_processes = config.get('MPI_PROCESSES', 1)
-        tool_account = config.get('TOOL_ACCOUNT', '')  # For the SLURM account
+        tool_account = config.get('TOOL_ACCOUNT', '')
         
         script_content = f"""#!/bin/bash
     #SBATCH --job-name=CONFLUENCE_{domain_name}
@@ -854,19 +853,19 @@ class INDRA:
     #SBATCH --error=confluence_%j.err
     """
 
-        # Add account if specified
         if tool_account:
             script_content += f"#SBATCH --account={tool_account}\n"
 
         script_content += f"""
     # Load required modules
-    module load python
+    module load StdEnv/2023
+    module load python/3.11.5
+    module load gdal/3.7.2
+    module load proj/9.3.0
+    module load geos/3.12.0
 
-    # Navigate to CONFLUENCE directory
-    cd {config_path.parent}
-
-    # Run CONFLUENCE
-    python -m CONFLUENCE.CONFLUENCE {config_path}
+    # Run CONFLUENCE script
+    python run_confluence.py {config_path}
     """
 
         with open(script_path, 'w') as f:
@@ -874,6 +873,14 @@ class INDRA:
         
         # Make script executable
         script_path.chmod(0o755)
+        
+        # Copy run_confluence.py to same directory as SLURM script
+        run_script_source = Path(__file__).parent / 'run_confluence.py'
+        run_script_dest = config_path.parent / 'run_confluence.py'
+        
+        import shutil
+        shutil.copy2(run_script_source, run_script_dest)
+        run_script_dest.chmod(0o755)
         
         return script_path
 
