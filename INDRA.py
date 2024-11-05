@@ -4,6 +4,7 @@ from typing import Dict, Any, List, Optional, Tuple
 import anthropic # type: ignore
 import os
 import sys
+import subprocess
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from CONFLUENCE.CONFLUENCE import CONFLUENCE # type: ignore
@@ -766,7 +767,7 @@ class INDRA:
                         f.write(line)
                 else:
                     f.write(line)
-
+    '''
     def run_confluence(self, config_path: Path) -> Dict[str, Any]:
         """
         Run CONFLUENCE with the given configuration file.
@@ -791,7 +792,89 @@ class INDRA:
         except Exception as e:
             print(f"Error running CONFLUENCE: {str(e)}")
             return {"error": str(e)}
+    ''' 
+
+    def run_confluence(self, config_path: Path) -> Dict[str, Any]:
+        """
+        Run CONFLUENCE with the given configuration file using SLURM batch system.
+
+        Args:
+            config_path (Path): Path to the configuration file.
+
+        Returns:
+            Dict[str, Any]: Results from the CONFLUENCE run.
+        """
+        try:
+            # Create SLURM submission script
+            slurm_script = self._create_slurm_script(config_path)
+            
+            # Submit job
+            submit_cmd = f"sbatch {slurm_script}"
+            result = subprocess.run(submit_cmd, shell=True, check=True, capture_output=True, text=True)
+            
+            # Extract job ID
+            job_id = result.stdout.strip().split()[-1]
+            self.logger.info(f"Submitted CONFLUENCE job with ID: {job_id}")
+            
+            # Option 1: Return immediately with job ID
+            return {"job_id": job_id, "status": "submitted"}
+            
+            # Option 2: Wait for job completion and return results
+            # while True:
+            #     status = self._check_job_status(job_id)
+            #     if status == "COMPLETED":
+            #         return self._get_confluence_results(config_path)
+            #     elif status in ["FAILED", "CANCELLED"]:
+            #         raise RuntimeError(f"CONFLUENCE job {job_id} {status}")
+            #     time.sleep(60)  # Check every minute
+                
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"Error submitting CONFLUENCE job: {str(e)}")
+            return {"error": str(e)}
+            
+    def _create_slurm_script(self, config_path: Path) -> Path:
+        """
+        Create a SLURM submission script for CONFLUENCE.
         
+        Args:
+            config_path (Path): Path to CONFLUENCE configuration file
+            
+        Returns:
+            Path: Path to created SLURM script
+        """
+        script_path = config_path.parent / "run_confluence.sh"
+        
+        script_content = f"""#!/bin/bash
+    #SBATCH --job-name=CONFLUENCE_{self.config.get('DOMAIN_NAME')}
+    #SBATCH --time=24:00:00
+    #SBATCH --ntasks={self.config.get('MPI_PROCESSES', 1)}
+    #SBATCH --mem=64G
+    #SBATCH --output=confluence_%j.out
+    #SBATCH --error=confluence_%j.err
+
+    # Load required modules
+    module load python
+
+    # Navigate to CONFLUENCE directory
+    cd {config_path.parent}
+
+    # Run CONFLUENCE
+    python -m CONFLUENCE.CONFLUENCE {config_path}
+    """
+
+        with open(script_path, 'w') as f:
+            f.write(script_content)
+        
+        # Make script executable
+        script_path.chmod(0o755)
+        
+        return script_path
+
+    def _check_job_status(self, job_id: str) -> str:
+        """Check the status of a SLURM job."""
+        cmd = f"sacct -j {job_id} --format=State --noheader"
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        return result.stdout.strip()
     def analyze_confluence_results(self, confluence_results: Dict[str, Any]) -> str:
         """
         Analyze the results from a CONFLUENCE run.
