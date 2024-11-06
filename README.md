@@ -33,5 +33,46 @@ export ANTHROPIC_API_KEY="your-api-key-here"
 
 # For Windows (via Command Prompt)
 set ANTHROPIC_API_KEY=your-api-key-here
-
 ```
+
+## Usage
+INDRA can be used in two main ways:
+
+1. New Project Initialization
+```
+python INDRA.py
+# Select 'n' when asked about existing config
+# Follow the interactive prompts
+```
+
+2. Existing Project Analysis
+```
+python INDRA.py
+# Select 'y' when asked about existing config
+# Provide path to your CONFLUENCE configuration file
+```
+
+## Dependencies
+
+INDRA is designed to work with the CONFLUENCE workflow. 
+See https://github.com/DarriEy/CONFLUENCE for the CONFLUENCE specific dependencies.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the GNU General Public License v3.0 - see the LICENSE file for details.
+
+
+## Contact
+
+Darri Eythorsson
+University of Calgary
+darri.eythorsson@ucalgary.ca
+
+## Citation
+
+If you use INDRA in your research, please cite:
+[Add paper citation once published]
