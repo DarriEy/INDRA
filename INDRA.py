@@ -893,7 +893,7 @@ class INDRA:
             
             # Submit job
             print(slurm_script)
-            submit_cmd = f"sbatch {config_path.parent.parent}/run_confluence_batch.sh"
+            submit_cmd = f"sbatch /home/darri/code/INDRA/run_confluence_batch.sh"
             print(submit_cmd)
             result = subprocess.run(submit_cmd, shell=True, check=True, capture_output=True, text=True)
             
