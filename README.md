@@ -59,7 +59,15 @@ See https://github.com/DarriEy/CONFLUENCE for the CONFLUENCE specific dependenci
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions to INDRA! Please follow these steps to contribute:
+
+1. Fork the repository
+2. Create a new branch for your feature
+3. Commit your changes
+4. Push to your fork
+5. Submit a pull request
+
+Please make sure to include tests as appropriate and adhere to the project's coding standards.
 
 ## License
 
