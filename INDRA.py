@@ -559,6 +559,9 @@ class INDRA:
                 elif status.startswith("PENDING") or status.startswith("RUNNING"):
                     print(f"\rJob status: {status}", end='', flush=True)
                     time.sleep(60)  # Check every minute
+                elif status.startswith("UNKNOWN") or status.startswith("RUNNING"):
+                    print(f"\rJob status: {status}", end='', flush=True)
+                    time.sleep(60)  # Check every minute
                 else:
                     print(f"\nUnexpected job status: {status}")
                     return {}, {}
