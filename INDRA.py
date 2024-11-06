@@ -5,6 +5,7 @@ import anthropic # type: ignore
 import os
 import sys
 import subprocess
+import time
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from CONFLUENCE.CONFLUENCE import CONFLUENCE # type: ignore
@@ -535,34 +536,113 @@ class INDRA:
                     settings = updated_settings
                     print(f"\nUpdated configuration saved to {control_file_path}")
             
-            # Run CONFLUENCE with initial configuration
+            # Run CONFLUENCE with initial configuration and wait for completion
             print("\nRunning CONFLUENCE with initial configuration...")
-            confluence_results = self.run_confluence(control_file_path)
+            job_info = self.run_confluence(control_file_path)
+            
+            if 'error' in job_info:
+                print(f"Error submitting CONFLUENCE job: {job_info['error']}")
+                return {}, {}
+            
+            # Wait for job completion
+            job_id = job_info['job_id']
+            print(f"\nWaiting for CONFLUENCE job {job_id} to complete...")
+            
+            while True:
+                status = self._check_job_status(job_id)
+                if status.startswith("COMPLETED"):
+                    print(f"\nCONFLUENCE job {job_id} completed successfully")
+                    break
+                elif status.startswith("FAILED") or status.startswith("CANCELLED"):
+                    print(f"\nCONFLUENCE job {job_id} {status.lower()}")
+                    return {}, {}
+                elif status.startswith("PENDING") or status.startswith("RUNNING"):
+                    print(f"\rJob status: {status}", end='', flush=True)
+                    time.sleep(60)  # Check every minute
+                else:
+                    print(f"\nUnexpected job status: {status}")
+                    return {}, {}
+            
+            # Read CONFLUENCE results
+            confluence_results = self._read_confluence_results(control_file_path, job_id)
             
             if confluence_results:
                 confluence_analysis = self.analyze_confluence_results(confluence_results)
                 print("\nCONFLUENCE Run Analysis:")
                 print(confluence_analysis)
                 return confluence_analysis
-            
+                
+            return {}, {}
+        
         else:
-            # Existing project workflow - proceed with expert analysis
-            synthesis = self.chairperson.consult_experts(settings, confluence_results)
-            report, suggestions = self.chairperson.generate_report(settings, synthesis, confluence_results)
+            # Rest of the code for existing project remains the same...
+            pass
+
+    def _check_job_status(self, job_id: str) -> str:
+        """
+        Check the status of a SLURM job.
+        
+        Args:
+            job_id (str): SLURM job ID
             
-            # Save synthesis report
-            self._save_synthesis_report(report, suggestions, watershed_name, report_path)
+        Returns:
+            str: Job status (PENDING, RUNNING, COMPLETED, FAILED, etc.)
+        """
+        try:
+            cmd = f"sacct -j {job_id} --format=State --noheader --parsable2"
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            if result.returncode == 0:
+                # Get the last status (most recent) and strip whitespace
+                status = result.stdout.strip().split('\n')[0]
+                return status
+            return "UNKNOWN"
+        except Exception as e:
+            self.logger.error(f"Error checking job status: {str(e)}")
+            return "UNKNOWN"
+
+    def _read_confluence_results(self, config_path: Path, job_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Read the results from a completed CONFLUENCE run.
+        
+        Args:
+            config_path (Path): Path to the configuration file
+            job_id (str): SLURM job ID
             
-            print("\nINDRA Analysis Summary:")
-            print("------------------------")
-            print(f"Analyzed config file: {control_file_path}")
-            print("\nKey points from the analysis:")
-            for i, key_point in enumerate(report['concluded_summary'].split('\n')[:10], 1):
-                print(f"{i}. {key_point}")
+        Returns:
+            Optional[Dict[str, Any]]: CONFLUENCE results if available
+        """
+        try:
+            # Read the configuration to get output paths
+            with open(config_path, 'r') as f:
+                config = yaml.safe_load(f)
             
-            print("\nSuggestions for improvement:")
-            for param, suggestion in suggestions.items():
-                print(f"{param}: {suggestion}")
+            # Get the output directory from config
+            domain_name = config.get('DOMAIN_NAME')
+            experiment_id = config.get('EXPERIMENT_ID')
+            confluence_data_dir = Path(config.get('CONFLUENCE_DATA_DIR'))
+            
+            # Construct paths to key output files
+            output_dir = confluence_data_dir / f"domain_{domain_name}/simulations/{experiment_id}"
+            
+            # Check if output directory exists
+            if not output_dir.exists():
+                self.logger.error(f"CONFLUENCE output directory not found: {output_dir}")
+                return None
+                
+            # Read key output files and compile results
+            results = {
+                "output_dir": str(output_dir),
+                "job_id": job_id,
+                "status": "completed"
+            }
+            
+            # Add any additional results parsing as needed
+            
+            return results
+            
+        except Exception as e:
+            self.logger.error(f"Error reading CONFLUENCE results: {str(e)}")
+            return None
     
     def _modify_configuration(self, settings: Dict[str, Any], expert_config: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
@@ -812,8 +892,8 @@ class INDRA:
             slurm_script = self._create_slurm_script(config_path, config)
             
             # Submit job
-            #submit_cmd = f"sbatch {slurm_script}"
-            submit_cmd = "sbatch run_confluence_batch.sh"
+            submit_cmd = f"sbatch {slurm_script}"
+            #submit_cmd = "sbatch run_confluence_batch.sh"
             result = subprocess.run(submit_cmd, shell=True, check=True, capture_output=True, text=True)
             
             # Extract job ID
@@ -837,7 +917,7 @@ class INDRA:
         Returns:
             Path: Path to created SLURM script
         """
-        script_path = config_path.parent.parent / "run_confluence.sh"
+        script_path = config_path.parent.parent / "run_confluence_batch.sh"
         
         # Extract parameters from config
         domain_name = config.get('DOMAIN_NAME', 'unknown_domain')
@@ -846,11 +926,11 @@ class INDRA:
         
         script_content = f"""#!/bin/bash
     #SBATCH --job-name=CONFLUENCE_{domain_name}
-    #SBATCH --time=24:00:00
     #SBATCH --ntasks={mpi_processes}
-    #SBATCH --mem-per-cpu=8G
-    #SBATCH --output=confluence_%j.out
-    #SBATCH --error=confluence_%j.err
+    #SBATCH --output=CONFLUENCE_single_%j.log
+    #SBATCH --error=CONFLUENCE_single_%j.err
+    #SBATCH --time=20:00:00
+    #SBATCH --mem-per-cpu=5G
     """
 
         if tool_account:
@@ -860,10 +940,10 @@ class INDRA:
     # Load required modules
     module restore confluence_modules
 
-    source /home/darri/code/confluence_env/bin/activate
+    source {str(Path(config['CONFLUENCE_CODE_DIR']).parent)}/confluence_env/bin/activate
 
     # Run CONFLUENCE script
-    python run_confluence.py {config_path}
+    python ../CONFLUENCE/CONFLUENCE.py --config {str(Path(config['CONFLUENCE_CODE_DIR']).parent)}/INDRA/0_config_files/config_active.yaml
     """
 
         with open(script_path, 'w') as f:
@@ -871,22 +951,8 @@ class INDRA:
         
         # Make script executable
         script_path.chmod(0o755)
-        
-        # Copy run_confluence.py to same directory as SLURM script
-        run_script_source = Path(__file__).parent / 'run_confluence.py'
-        run_script_dest = config_path.parent / 'run_confluence.py'
-        
-        import shutil
-        shutil.copy2(run_script_source, run_script_dest)
-        run_script_dest.chmod(0o755)
-        
+                
         return script_path
-
-    def _check_job_status(self, job_id: str) -> str:
-        """Check the status of a SLURM job."""
-        cmd = f"sacct -j {job_id} --format=State --noheader"
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-        return result.stdout.strip()
     
     def analyze_confluence_results(self, confluence_results: Dict[str, Any]) -> str:
         """

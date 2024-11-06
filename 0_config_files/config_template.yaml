@@ -88,7 +88,7 @@ CATCHMENT_PLOT_DIR: default                                    # Directory to ou
 SOIL_CLASS_PATH: default                                       # Path to soil classification raster. If 'default', uses root_path/domain_[name]/attributes/soilclass
 SOIL_CLASS_NAME: default                                       # Name of soil classification raster
 LAND_CLASS_PATH: default                                       # Path to land classification raster. If 'default', uses root_path/domain_[name]/attributes/landclass      
-LAND_CLASS_NAME: defalt                                        # Name of land classification raster
+LAND_CLASS_NAME: default                                        # Name of land classification raster
 RADIATION_PATH: default                                        # Path to radiation classification raster. If 'default', uses root_path/domain_[name]/attributes/radiation 
 
 # Tool paths
