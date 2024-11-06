@@ -1,6 +1,8 @@
 # INDRA specific ignores
 indra_reports/
-0_config_files/config_template.yaml
+0_config_files/config_*.yaml
+!0_config_files/config_template.yaml
+run_confluence_batch.sh
 
 # Python
 __pycache__/
@@ -46,4 +48,3 @@ env/
 # System
 .DS_Store
 Thumbs.db
-
