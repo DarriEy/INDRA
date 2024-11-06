@@ -926,25 +926,25 @@ class INDRA:
         tool_account = config.get('TOOL_ACCOUNT', '')
         
         script_content = f"""#!/bin/bash
-    #SBATCH --job-name=CONFLUENCE_{domain_name}
-    #SBATCH --ntasks={mpi_processes}
-    #SBATCH --output=CONFLUENCE_single_%j.log
-    #SBATCH --error=CONFLUENCE_single_%j.err
-    #SBATCH --time=20:00:00
-    #SBATCH --mem-per-cpu=5G
-    """
+#SBATCH --job-name=CONFLUENCE_{domain_name}
+#SBATCH --ntasks={mpi_processes}
+#SBATCH --output=CONFLUENCE_single_%j.log
+#SBATCH --error=CONFLUENCE_single_%j.err
+#SBATCH --time=20:00:00
+#SBATCH --mem-per-cpu=5G
+"""
 
         if tool_account:
             script_content += f"#SBATCH --account={tool_account}\n"
 
         script_content += f"""
-    # Load required modules
-    module restore confluence_modules
+# Load required modules
+module restore confluence_modules
 
-    source {str(Path(config['CONFLUENCE_CODE_DIR']).parent)}/confluence_env/bin/activate
+source {str(Path(config['CONFLUENCE_CODE_DIR']).parent)}/confluence_env/bin/activate
 
-    # Run CONFLUENCE script
-    python ../CONFLUENCE/CONFLUENCE.py --config {str(Path(config['CONFLUENCE_CODE_DIR']).parent)}/INDRA/0_config_files/config_active.yaml
+# Run CONFLUENCE script
+python ../CONFLUENCE/CONFLUENCE.py --config {str(Path(config['CONFLUENCE_CODE_DIR']).parent)}/INDRA/0_config_files/config_active.yaml
     """
 
         with open(script_path, 'w') as f:
