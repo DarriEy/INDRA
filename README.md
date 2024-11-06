@@ -1,21 +1,37 @@
 # INDRA: Intelligent Network for Dynamic River Analysis
 
-INDRA is an AI-powered system for analyzing CONFLUENCE model settings using a panel of expert AI agents. It provides comprehensive insights and suggestions for improving hydrological modeling.
+INDRA is an AI-powered system for running the CONFLUENCE workflow using a panel of expert AI agents. It provides comprehensive insights and suggestions for improving hydrological modeling through the integration of multiple expert perspectives
+## Features
 
-INDRA is under development ...
+- Generates perceptual models for new watersheds
+- Provides expert-guided configuration for CONFLUENCE setups
+- Performs comprehensive model analysis through multiple expert lenses
+- Offers configuration suggestions based on expert consensus
+- Creates detailed reports for model decisions and their justification
 
-## Setup and Usage
-[Add setup instructions here]
+## Setup and Installation
 
-## Dependencies
-- Python 3.x
-- anthropic
-- pyyaml
+1. Clone the repository:
+```
+git clone https://github.com/DarriEy/INDRA.git
+cd INDRA
+```
 
-## License
-This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+2. Set up your environment:
 
-## Contact
-Darri Eythorsson, University of Calgary
 
-darri.eythorsson@ucalgary.ca
+Create and activate a Python virtual environment
+Install dependencies:
+```
+pip install -r requirements.txt
+```
+
+3. Set up your API key:
+```
+# For Unix-like systems (Linux/Mac)
+export ANTHROPIC_API_KEY="your-api-key-here"
+
+# For Windows (via Command Prompt)
+set ANTHROPIC_API_KEY=your-api-key-here
+
+```
