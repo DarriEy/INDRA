@@ -589,7 +589,7 @@ class INDRA:
             str: Job status (PENDING, RUNNING, COMPLETED, FAILED, etc.)
         """
         try:
-            cmd = f"sacct -j {job_id} --format=State --noheader --parsable2"
+            cmd = f"squeue -j {job_id} --format=State --noheader --parsable2"
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
             if result.returncode == 0:
                 # Get the last status (most recent) and strip whitespace
@@ -892,9 +892,7 @@ class INDRA:
             slurm_script = self._create_slurm_script(config_path, config)
             
             # Submit job
-            print(slurm_script)
-            submit_cmd = f"sbatch /home/darri/code/INDRA/run_confluence_batch.sh"
-            print(submit_cmd)
+            submit_cmd = f"sbatch run_confluence_batch.sh"
             result = subprocess.run(submit_cmd, shell=True, check=True, capture_output=True, text=True)
             
             # Extract job ID
