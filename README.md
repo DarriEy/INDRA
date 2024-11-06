@@ -28,7 +28,7 @@ pip install -r requirements.txt
 
 3. Set up your API key:
 ```
-# For Unix-like systems (Linux/Mac)
+# For Unix-like systems (Linux/Mac) 
 export ANTHROPIC_API_KEY="your-api-key-here"
 
 # For Windows (via Command Prompt)
@@ -80,7 +80,3 @@ Darri Eythorsson
 University of Calgary
 darri.eythorsson@ucalgary.ca
 
-## Citation
-
-If you use INDRA in your research, please cite:
-[Add paper citation once published]
