@@ -892,8 +892,9 @@ class INDRA:
             slurm_script = self._create_slurm_script(config_path, config)
             
             # Submit job
-            submit_cmd = f"sbatch {slurm_script}"
-            #submit_cmd = "sbatch run_confluence_batch.sh"
+            print(slurm_script)
+            #submit_cmd = f"sbatch {slurm_script}"
+            submit_cmd = "sbatch run_confluence_batch.sh"
             result = subprocess.run(submit_cmd, shell=True, check=True, capture_output=True, text=True)
             
             # Extract job ID
