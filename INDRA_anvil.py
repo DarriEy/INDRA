@@ -149,7 +149,7 @@ class HydrologistExpert(Expert):
         prompt = f'''Based on the following CONFLUENCE model domain, generate a detailed and extensive perceptual model summary for the domain being modelled, 
                      citing the relevant literature and providing a list of references. Include key  processes and their interaction. 
                      Summarize previous modelling efforts in this basin and their findings. Identify modelling approaches that have provided good results or 
-                     are likely to provide good results. Also identify (if available in the literature) modelling approaches that have not proven fruitful.'''
+                     are likely to provide good results. Also identify (if available in the literature) modelling approaches that have not proven fruitful.:\n\n{summarized_settings}'''
         perceptual_model = self.api.generate_text(prompt, system_message)
         return perceptual_model
 
@@ -167,7 +167,7 @@ class HydrogeologyExpert(Expert):
         prompt = f'''Based on the following CONFLUENCE model domain, generate a detailed and extensive perceptual model summary for the domain being modelled, 
                      citing the relevant literature and providing a list of references. Include key  processes and their interaction. 
                      Summarize previous modelling efforts in this basin and their findings. Identify modelling approaches that have provided good results or 
-                     are likely to provide good results. Also identify (if available in the literature) modelling approaches that have not proven fruitful.'''
+                     are likely to provide good results. Also identify (if available in the literature) modelling approaches that have not proven fruitful.:\n\n{summarized_settings}'''
         perceptual_model = self.api.generate_text(prompt, system_message)
         return perceptual_model
 
@@ -181,7 +181,7 @@ class MeteorologicalExpert(Expert):
         prompt = f'''Based on the following CONFLUENCE model domain, generate a detailed and extensive perceptual model summary for the domain being modelled, 
                      citing the relevant literature and providing a list of references. Include key  processes and their interaction. 
                      Summarize previous modelling efforts in this basin and their findings. Identify modelling approaches that have provided good results or 
-                     are likely to provide good results. Also identify (if available in the literature) modelling approaches that have not proven fruitful.'''
+                     are likely to provide good results. Also identify (if available in the literature) modelling approaches that have not proven fruitful.:\n\n{summarized_settings}'''
         perceptual_model = self.api.generate_text(prompt, system_message)
         return perceptual_model
 
