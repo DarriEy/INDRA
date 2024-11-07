@@ -932,7 +932,7 @@ class INDRA:
 #SBATCH --output=CONFLUENCE_single_%j.log
 #SBATCH --error=CONFLUENCE_single_%j.err
 #SBATCH --time=20:00:00
-#SBATCH --mem-per-cpu=10G
+#SBATCH --mem-per-cpu=15G
 """
 
         if tool_account:
