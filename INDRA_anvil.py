@@ -8,6 +8,7 @@ import sys
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from CONFLUENCE.CONFLUENCE import CONFLUENCE # type: ignore
+TEMPLATE_CONFIG_PATH = Path(__file__).parent / '0_config_files' / 'config_template.yaml'
 
 CONFLUENCE_OVERVIEW = """
 CONFLUENCE (Community Optimization and Numerical Framework for Large-domain Understanding of Environmental Networks and Computational Exploration) is an integrated hydrological modeling platform. It combines various components for data management, model setup, optimization, uncertainty analysis, forecasting, and visualization across multiple scales and regions.
@@ -491,27 +492,36 @@ class INDRA:
             
             print(f"\nConfiguration rationale saved to: {rationale_file}")
             
-            # Create configuration directory and file
+            # Create configuration directory
             config_path = Path("0_config_files")
             config_path.mkdir(parents=True, exist_ok=True)
             config_file_path = config_path / f"config_{watershed_name}.yaml"
             
-            # Save configuration to file
-            with open(config_file_path, 'w') as f:
-                yaml.dump(config, f)
+            # Use template to create new config file
+            template_path = Path(__file__).parent / '0_config_files' / 'config_template.yaml'
+            self._create_config_file_from_template(
+                template_path=template_path,
+                output_path=config_file_path,
+                watershed_name=watershed_name,
+                expert_config=config
+            )
             
-            # Create/update symlink
+            # Create/update symlink with force flag
             active_config_path = config_path / "config_active.yaml"
             if active_config_path.exists():
                 active_config_path.unlink()
-            active_config_path.symlink_to(config_file_path)
+            try:
+                os.symlink(config_file_path, active_config_path)
+            except FileExistsError:
+                os.remove(active_config_path)
+                os.symlink(config_file_path, active_config_path)
             
             settings = config
-            control_file_path = config_file_path  # Set the control_file_path to the new config file
+            control_file_path = config_file_path
             
             # Run CONFLUENCE with initial configuration
             print("\nRunning CONFLUENCE with initial configuration...")
-            confluence_results = self.run_confluence(config_file_path)  # Use config_file_path instead of active_config_path
+            confluence_results = self.run_confluence(config_file_path)
         
         synthesis = self.chairperson.consult_experts(settings, confluence_results)
         report, suggestions = self.chairperson.generate_report(settings, synthesis, confluence_results)
@@ -605,6 +615,59 @@ class INDRA:
                             new_line += f"  # {comment}"
                         f.write(new_line + '\n')
                     else:
+                        f.write(line)
+                else:
+                    f.write(line)
+
+    def _create_config_file_from_template(self, template_path: Path, output_path: Path, watershed_name: str, expert_config: Dict[str, Any]):
+        """
+        Create a new configuration file from template while preserving structure and comments.
+
+        Args:
+            template_path (Path): Path to the template config file
+            output_path (Path): Path where to save the new config file
+            watershed_name (str): Name of the watershed
+            expert_config (Dict[str, Any]): Expert-suggested configurations
+        """
+        if not template_path.exists():
+            raise FileNotFoundError(f"Configuration template not found at: {template_path}")
+        
+        # Read template file preserving all lines
+        with open(template_path, 'r') as f:
+            template_lines = f.readlines()
+        
+        # Add watershed name to expert config
+        expert_config['DOMAIN_NAME'] = watershed_name
+        
+        # Process template line by line
+        with open(output_path, 'w') as f:
+            current_line = ''
+            
+            for line in template_lines:
+                # Preserve comment lines and section headers
+                if line.strip().startswith('#') or line.strip().startswith('### ==='):
+                    f.write(line)
+                    continue
+                    
+                # Process configuration lines
+                if ':' in line:
+                    key = line.split(':')[0].strip()
+                    if key in expert_config:
+                        # Extract any inline comments
+                        comment = line.split('#')[1].strip() if '#' in line else ''
+                        value = expert_config[key]
+                        
+                        # Handle string values with spaces
+                        if isinstance(value, str) and ' ' in value:
+                            value = f"'{value}'"
+                        
+                        # Construct new line
+                        new_line = f"{key}: {value}"
+                        if comment:
+                            new_line += f"  # {comment}"
+                        f.write(new_line + '\n')
+                    else:
+                        # Keep original line for non-expert configs
                         f.write(line)
                 else:
                     f.write(line)
