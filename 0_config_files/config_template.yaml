@@ -39,7 +39,7 @@ POUR_POINT_SHP_NAME: default                                   # If 'default', u
 # Domain representation settings
 DOMAIN_DEFINITION_METHOD: delineate                            # Define domain representation method, current options: subset_geofabric, delineate_geofabric, lumped_watershed
 GEOFABRIC_TYPE: TDX                                            # Source geofabric to subset from, current options: Merit, TDX, NWS
-STREAM_THRESHOLD: 5000                                         # Threshold flow accumulation for stream vectorisation
+STREAM_THRESHOLD: 10000                                        # Threshold flow accumulation for stream vectorisation
 LUMPED_WATERSHED_METHOD: pysheds                               # Use pysheds or TauDEM for lumped delineation
 CLEANUP_INTERMEDIATE_FILES: True                               # Remove temporary files from delieation
 DELINEATE_BY_POURPOINT: True                                   # Delineate watershed from pour point
@@ -93,20 +93,19 @@ RADIATION_PATH: default                                        # Path to radiati
 
 # Tool paths
 DATATOOL_PATH: default                                         # Path to datatool executable 
-GISTOOL_PATH: default                                          # Path to gistool executable
-EASYMORE_CLIENT: easymore cli                                  # Name of easymore client
 DATATOOL_DATASET_ROOT: /project/rrg-mclark/data/meteorological-data/    # Path to datatool datasets root directory
-DATATOOL_CACHE: /home/darri/cache/                             # Cache directory used in datatool
-TOOL_ACCOUNT: def-mclark-ab                                    # HPC account for running datatool
+GISTOOL_PATH: default                                          # Path to gistool executable
 GISTOOL_DATASET_ROOT: /project/rrg-mclark/data/geospatial-data/         # Path to gistool datasets root directory
 GISTOOL_LIB_PATH: /project/rrg-mclark/lib/                     # Path to gistool libraries
-TOOL_CACHE: $HOME/TMPDIR                                      # Path to gistool cache directory
+TOOL_ACCOUNT: def-mclark-ab                                    # HPC account for running datatool
+TOOL_CACHE: $HOME/TMPDIR                                       # Path to gistool cache directory
+EASYMORE_CLIENT: easymore cli                                  # Name of easymore client
 EASYMORE_CACHE: /home/darri/easymore/                          # Path to easymore cache directory
 EASYMORE_JOB_CONF: "installs/MAF/02_model_agnostic_component/easymore-job.slurm" #Path to easymore job config
 
 ### ============================================= 3. Model Agnostic settings: =============================================================
 # Experiment settings
-EXPERIMENT_TIME_START: 2018-01-01 01:00                        # Start time of experiment e.g. '2010-01-01 00:00'
+EXPERIMENT_TIME_START: 2017-01-01 01:00                        # Start time of experiment e.g. '2010-01-01 00:00'
 EXPERIMENT_TIME_END: 2018-12-31 23:00                          # End time of experiment e.g. '2010-12-31 23:00'
 EXPERIMENT_BACKUP_SETTINGS: yes                                # Backup experiment settings in output folder, options yes or no.
 
@@ -115,7 +114,7 @@ DATA_ACQUIRE: HPC                                              # Where to acquir
 
 # Forcing data settings
 FORCING_DATASET: "ERA5"                                        # Forcing dataset to use
-FORCING_START_YEAR: "2018"                                     # Forcing start year
+FORCING_START_YEAR: "2017"                                     # Forcing start year
 FORCING_END_YEAR: "2018"                                       # Forcing end year 
 FORCING_VARIABLES: longitude,latitude,time,LWRadAtm,SWRadAtm,pptrate,airpres,airtemp,spechum,windspd  # Forcing dataset variables to use or acquire                                                                    
 FORCING_MEASUREMENT_HEIGHT: 1.5                                # Reference height for forcing measurements [m].
