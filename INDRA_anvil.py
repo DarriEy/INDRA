@@ -506,7 +506,7 @@ class INDRA:
             settings = config
             # Run CONFLUENCE with initial configuration
             print("\nRunning CONFLUENCE with initial configuration...")
-            confluence_results = self.run_confluence(active_config_path)
+            confluence_results = self.run_confluence(config_file_path)
         
         synthesis = self.chairperson.consult_experts(settings, confluence_results)
         report, suggestions = self.chairperson.generate_report(settings, synthesis, confluence_results)
