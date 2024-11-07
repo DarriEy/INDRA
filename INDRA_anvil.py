@@ -491,22 +491,27 @@ class INDRA:
             
             print(f"\nConfiguration rationale saved to: {rationale_file}")
             
+            # Create configuration directory and file
             config_path = Path("0_config_files")
             config_path.mkdir(parents=True, exist_ok=True)
             config_file_path = config_path / f"config_{watershed_name}.yaml"
             
+            # Save configuration to file
             with open(config_file_path, 'w') as f:
                 yaml.dump(config, f)
             
+            # Create/update symlink
             active_config_path = config_path / "config_active.yaml"
             if active_config_path.exists():
                 active_config_path.unlink()
-            active_config_path.symlink_to(config_file_path.name)
+            active_config_path.symlink_to(config_file_path)
             
             settings = config
+            control_file_path = config_file_path  # Set the control_file_path to the new config file
+            
             # Run CONFLUENCE with initial configuration
             print("\nRunning CONFLUENCE with initial configuration...")
-            confluence_results = self.run_confluence(config_file_path)
+            confluence_results = self.run_confluence(config_file_path)  # Use config_file_path instead of active_config_path
         
         synthesis = self.chairperson.consult_experts(settings, confluence_results)
         report, suggestions = self.chairperson.generate_report(settings, synthesis, confluence_results)
@@ -524,32 +529,8 @@ class INDRA:
         print("\nSuggestions for improvement:")
         for param, suggestion in suggestions.items():
             print(f"{param}: {suggestion}")
-
-    def _save_synthesis_report(self, report: Dict[str, str], suggestions: Dict[str, Any], 
-                          watershed_name: str, report_path: Path):
-        """Save the synthesis report for an existing project."""
-        synthesis_file = report_path / f"synthesis_report_{watershed_name}.txt"
         
-        with open(synthesis_file, 'w') as f:
-            f.write(f"INDRA Synthesis Report for {watershed_name}\n")
-            f.write("=" * 50 + "\n\n")
-            
-            f.write("Expert Panel Discussion Summary\n")
-            f.write("-" * 28 + "\n")
-            f.write(report['panel_summary'])
-            f.write("\n\n")
-            
-            f.write("Concluded Summary\n")
-            f.write("-" * 16 + "\n")
-            f.write(report['concluded_summary'])
-            f.write("\n\n")
-            
-            f.write("Configuration Suggestions\n")
-            f.write("-" * 24 + "\n")
-            for param, suggestion in suggestions.items():
-                f.write(f"{param}: {suggestion}\n")
-        
-        print(f"\nSynthesis report saved to: {synthesis_file}")
+        return report, suggestions
 
     def _modify_configuration(self, settings: Dict[str, Any], expert_config: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Allow user to modify INDRA-suggested configuration settings interactively."""
