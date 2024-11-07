@@ -626,6 +626,7 @@ class INDRA:
 
     def run_confluence(self, config_path: Path) -> Dict[str, Any]:
         """Run CONFLUENCE with the given configuration file."""
+        print(config_path)
         try:
             confluence = CONFLUENCE(config_path)
             confluence.run_workflow()
