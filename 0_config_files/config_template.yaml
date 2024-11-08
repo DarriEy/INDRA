@@ -24,7 +24,7 @@ DOMAIN_NAME: "Chena"                                           # Name of experim
 EXPERIMENT_ID: run_1                                           # Name of experiment
 
 # Computatational settings
-MPI_PROCESSES: 80                                              # Number of parallel processes allowed, based on your system's capabilities
+MPI_PROCESSES: 20                                              # Number of parallel processes allowed, based on your system's capabilities
 FORCE_RUN_ALL_STEPS: False                                     # Run all steps in the workflow and overwrite existing files
 
 ### ============================================= 2. Geopsatial settings: =================================================================
@@ -90,6 +90,7 @@ SOIL_CLASS_NAME: default                                       # Name of soil cl
 LAND_CLASS_PATH: default                                       # Path to land classification raster. If 'default', uses root_path/domain_[name]/attributes/landclass      
 LAND_CLASS_NAME: default                                        # Name of land classification raster
 RADIATION_PATH: default                                        # Path to radiation classification raster. If 'default', uses root_path/domain_[name]/attributes/radiation 
+BASEMAP_PATH: /home/darri/projects/def-mclark-ab/darri/data/basemap/global_basemap.tif
 
 # Tool paths
 DATATOOL_PATH: default                                         # Path to datatool executable 
@@ -237,7 +238,7 @@ OBSERVATIONS_PATH: default                                     # Path to observe
 # Observation data paths
 STREAMFLOW_DATA_PROVIDER: USGS                                 # Provider of streamflow data, current options: USGS, WSC, VI  
 STREAMFLOW_RAW_PATH: default                                   # Path to streamflow raw data
-STREAMFLOW_RAW_NAME: CHENA R NR TWO RIVERS AK_iv.txt           # Name of streamflow raw data file
+STREAMFLOW_RAW_NAME: default                                   # Name of streamflow raw data file
 STREAMFLOW_PROCESSED_PATH: default                             # Path to streamflow processed dataset. If default, uses self.data_dir / observations / streamflow / preprocessed / config['DOMAIN_NAME']_streamflow_processed.csv
 
 ### ============================================= 6. Optimisation settings: ===============================================================

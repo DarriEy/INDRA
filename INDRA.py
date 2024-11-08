@@ -933,8 +933,8 @@ class INDRA:
 #SBATCH --ntasks={mpi_processes}
 #SBATCH --output=CONFLUENCE_single_%j.log
 #SBATCH --error=CONFLUENCE_single_%j.err
-#SBATCH --time=20:00:00
-#SBATCH --mem-per-cpu=15G
+#SBATCH --time=24:00:00
+#SBATCH --mem-per-cpu=20G
 """
 
         if tool_account:
