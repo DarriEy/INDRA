@@ -492,6 +492,8 @@ class INDRA:
         if is_new_project:
             print("Initiating a new CONFLUENCE project.")
             watershed_name = input("Enter the name of the watershed you want to model: ")
+            watershed_name = _sanitize_watershed_name(watershed_name)
+
         else:
             settings = self.chairperson.load_control_file(control_file_path)
             watershed_name = settings.get('DOMAIN_NAME')
@@ -993,6 +995,22 @@ def summarize_settings(settings: Dict[str, Any], max_length: int = 2000) -> str:
         summarized += summary
     
     return summarized
+
+def _sanitize_watershed_name(name: str) -> str:
+    """
+    Sanitize watershed name by replacing spaces with underscores and removing any special characters.
+    
+    Args:
+        name (str): Original watershed name
+        
+    Returns:
+        str: Sanitized watershed name
+    """
+    # Replace spaces with underscores
+    sanitized = name.strip().replace(' ', '_')
+    # Remove any special characters that might cause issues in file names
+    sanitized = ''.join(c for c in sanitized if c.isalnum() or c == '_')
+    return sanitized
 
 # Usage
 if __name__ == "__main__":

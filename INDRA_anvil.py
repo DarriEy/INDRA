@@ -263,12 +263,11 @@ class Chairperson:
         1. HYDROLOGICAL_MODEL (SUMMA, FLASH)
         2. ROUTING_MODEL (mizuroute)
         3. FORCING_DATASET (RDRS, ERA5)
-        4. STREAM_THRESHOLD
-        5. DOMAIN_DISCRETIZATION (elevation, soilclass, landclass)
-        6. ELEVATION_BAND_SIZE
-        7. MIN_HRU_SIZE
-        8. POUR_POINT_COORDS (lat/lon)
-        9. BOUNDING_BOX_COORDS (lat_max/lon_min/lat_min/lon_max.)
+        4. DOMAIN_DISCRETIZATION (elevation, soilclass, landclass)
+        5. ELEVATION_BAND_SIZE
+        6. MIN_HRU_SIZE
+        7. POUR_POINT_COORDS (lat/lon)
+        8. BOUNDING_BOX_COORDS (lat_max/lon_min/lat_min/lon_max.)
 
         Your response MUST follow this EXACT format (including the triple backticks):
         ```python
@@ -276,7 +275,6 @@ class Chairperson:
             "HYDROLOGICAL_MODEL": "SUMMA",  # or "FLASH"
             "ROUTING_MODEL": "mizuroute",
             "FORCING_DATASET": "ERA5",  # or "RDRS"
-            "STREAM_THRESHOLD": 100,  # example value
             "DOMAIN_DISCRETIZATION": "elevation",  # or "soilclass" or "landclass"
             "ELEVATION_BAND_SIZE": 100,  # example value
             "MIN_HRU_SIZE": 1,  # example value
