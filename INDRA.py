@@ -72,7 +72,29 @@ EXPERT_PROMPTS = {
     3. Temporal and spatial scales of the model setup
     
      Provide insights on how the current configuration might impact the model's ability to accurately represent the hydrogeologicallogical system, and suggest potential improvements or alternative approaches where applicable.
-    """
+    """,
+     "Geographer Expert": f"""
+        {CONFLUENCE_OVERVIEW}
+        
+        As the Geographer Expert, your role is to determine precise spatial boundaries and coordinates for watershed delineation. Consider the following aspects:
+        1. Watershed extent based on topography and drainage patterns
+        2. Stream network connectivity and hierarchy
+        3. Pour point location verification and adjustment
+        4. Buffer zone requirements for proper watershed delineation
+        5. DEM resolution and its impact on coordinate precision
+        6. Potential boundary issues (e.g., karst areas, braided channels, deltas)
+        
+        For pour points:
+        - Verify the point lies on the main channel
+        - Ensure it's at least 5km upstream from confluences/estuaries
+        - Validate against known stream networks
+        
+        For bounding boxes:
+        - Add minimum 10km buffer beyond expected watershed boundary
+        - Verify inclusion of all potential tributary headwaters
+        - Check for complete stream network coverage
+        - Ensure pour point is well within bounds
+        """
 }
 
 
@@ -178,6 +200,8 @@ class Expert:
         analysis = self.api.generate_text(prompt, system_message)
         return {"full_analysis": analysis}
 
+
+
 class HydrologistExpert(Expert):
     """
     Expert agent specializing in hydrological processes and model structure.
@@ -261,6 +285,55 @@ class MeteorologicalExpert(Expert):
                      :\n\n{summarized_settings}'''
         perceptual_model = self.api.generate_text(prompt, system_message)
         return perceptual_model
+
+class GeographerExpert(Expert):
+    """Expert in watershed delineation and spatial boundary determination."""
+    
+    def __init__(self, api: AnthropicAPI):
+        super().__init__("Geographer Expert", "watershed delineation and spatial boundaries", api)
+        
+    def validate_coordinates(self, pour_point: str, bounding_box: str) -> Dict[str, Any]:
+        """
+        Validate proposed coordinates against spatial criteria.
+        
+        Args:
+            pour_point: String of format "lat/lon"
+            bounding_box: String of format "lat_max/lon_min/lat_min/lon_max"
+            
+        Returns:
+            Dict containing validation results and any necessary adjustments
+        """
+        system_message = "You are an expert geographer validating watershed coordinates."
+        
+        prompt = f"""
+        Please validate the following watershed coordinates:
+        Pour point: {pour_point}
+        Bounding box: {bounding_box}
+        
+        Verify that:
+        1. The pour point coordinates lie on a known river channel
+        2. The pour point is at least 5km upstream from any major confluence or estuary
+        3. The bounding box fully contains the pour point with significant margin
+        4. The bounding box extends at least 10km beyond likely watershed boundaries
+        5. The coordinates have appropriate precision (6 decimal places for pour point, 2 for bounding box)
+        
+        If any issues are found, provide corrected coordinates with justification.
+        
+        Return response as a Python dictionary:
+        {{
+            "valid": bool,
+            "pour_point": str,  # Original or corrected
+            "bounding_box": str,  # Original or corrected
+            "adjustments": list,  # List of any changes made
+            "justification": str  # Explanation of changes
+        }}
+        """
+        
+        response = self.api.generate_text(prompt, system_message)
+        # Execute the response to get the dictionary
+        local_vars = {}
+        exec(f"result = {response}", globals(), local_vars)
+        return local_vars['result']
 
 class Chairperson:
     """
@@ -419,7 +492,7 @@ class Chairperson:
         Generate expert-guided initial configuration for new watershed.
 
         Coordinates expert panel to determine optimal initial settings based on
-        watershed characteristics and modeling best practices.
+        watershed characteristics, modeling best practices, and validates spatial boundaries.
 
         Args:
             watershed_name (str): Name of watershed to be modeled
@@ -445,13 +518,12 @@ class Chairperson:
         5. ELEVATION_BAND_SIZE (if using elevation-based discretization)
         6. MIN_HRU_SIZE: Minimum size of the model domain HRUs, in km2 recommended 10 km2 for large watersheds and 1 km2 for small watersheds
         7. POUR_POINT_COORDS: coordinates lat/lon to define watershed to delineate must be specified as decimals with 6 digits 
-                             in the format 'lat/lon'. Select coordinates on the river main step. Make sure to select a point that is not close to a confluence or 
-                             in the estuary as these areas can be problematic for the delineation, if location is not specified, please select a location about 5 km inland from the estuary.
+                            in the format 'lat/lon'. Select coordinates on the river main step. Make sure to select a point that is not close to a confluence or 
+                            in the estuary as these areas can be problematic for the delineation, if location is not specified, please select a location about 5 km inland from the estuary.
         8. BOUNDING_BOX_COORDS: coordinates of the bounding box of the watershed must be specified as decimals with 2 digits 
-                               in the format 'lat_max/lon_min/lat_min/lon_max'. Be absolutely sure you include the whole watershed of the river and it's tributaries. 
-                               Please add a generous buffer around it to be safe. Be sure that the bounding box includes the Pour Point from 7.
+                            in the format 'lat_max/lon_min/lat_min/lon_max'. Be absolutely sure you include the whole watershed of the river and it's tributaries. 
+                            Please add a generous buffer around it to be safe. Be sure that the bounding box includes the Pour Point from 7.
         9. PARAMS_TO_CALIBRATE: If HYDROLOGICAL_MODEL is SUMMA, select which parameters to calibrate. Provide your suggestions as a comma separated list with no white space. Options are: upperBoundHead,lowerBoundHead,upperBoundTheta,lowerBoundTheta,upperBoundTemp,lowerBoundTemp,tempCritRain,tempRangeTimestep,frozenPrecipMultip,snowfrz_scale,fixedThermalCond_snow,albedoMax,albedoMinWinter,albedoMinSpring,albedoMaxVisible,albedoMinVisible,albedoMaxNearIR,albedoMinNearIR,albedoDecayRate,albedoSootLoad,albedoRefresh,radExt_snow,directScale,Frad_direct,Frad_vis,newSnowDenMin,newSnowDenMult,newSnowDenScal,constSnowDen,newSnowDenAdd,newSnowDenMultTemp,newSnowDenMultWind,newSnowDenMultAnd,newSnowDenBase,densScalGrowth,tempScalGrowth,grainGrowthRate,densScalOvrbdn,tempScalOvrbdn,baseViscosity,Fcapil,k_snow,mw_exp,z0Snow,z0Soil,z0Canopy,zpdFraction,critRichNumber,Louis79_bparam,Louis79_cStar,Mahrt87_eScale,leafExchangeCoeff,windReductionParam,Kc25,Ko25,Kc_qFac,Ko_qFac,kc_Ha,ko_Ha,vcmax25_canopyTop,vcmax_qFac,vcmax_Ha,vcmax_Hd,vcmax_Sv,vcmax_Kn,jmax25_scale,jmax_Ha,jmax_Hd,jmax_Sv,fractionJ,quantamYield,vpScaleFactor,cond2photo_slope,minStomatalConductance,winterSAI,summerLAI,rootScaleFactor1,rootScaleFactor2,rootingDepth,rootDistExp,plantWiltPsi,soilStressParam,critSoilWilting,critSoilTranspire,critAquiferTranspire,minStomatalResistance,leafDimension,heightCanopyTop,heightCanopyBottom,specificHeatVeg,maxMassVegetation,throughfallScaleSnow,throughfallScaleRain,refInterceptCapSnow,refInterceptCapRain,snowUnloadingCoeff,canopyDrainageCoeff,ratioDrip2Unloading,canopyWettingFactor,canopyWettingExp,soil_dens_intr,thCond_soil,frac_sand,frac_silt,frac_clay,fieldCapacity,wettingFrontSuction,theta_mp,theta_sat,theta_res,vGn_alpha,vGn_n,mpExp,k_soil,k_macropore,kAnisotropic,zScale_TOPMODEL,compactedDepth,aquiferBaseflowRate,aquiferScaleFactor,aquiferBaseflowExp,qSurfScale,specificYield,specificStorage,f_impede,soilIceScale,soilIceCV,minwind,minstep,maxstep,wimplicit,maxiter,relConvTol_liquid,absConvTol_liquid,relConvTol_matric,absConvTol_matric,relConvTol_energy,absConvTol_energy,relConvTol_aquifr,absConvTol_aquifr,zmin,zmax,zminLayer1,zminLayer2,zminLayer3,zminLayer4,zminLayer5,zmaxLayer1_lower,zmaxLayer2_lower,zmaxLayer3_lower,zmaxLayer4_lower,zmaxLayer1_upper,zmaxLayer2_upper,zmaxLayer3_upper,zmaxLayer4_upper,minTempUnloading,minWindUnloading,rateTempUnloading,rateWindUnloading
-        
 
         For each parameter, provide a brief justification for your recommendation.
 
@@ -490,6 +562,28 @@ class Chairperson:
         
         # Clean up the justification summary
         justification_summary = justification_part.strip()
+
+        # Find the geographer expert
+        geographer = next((expert for expert in self.experts if isinstance(expert, GeographerExpert)), None)
+        
+        if geographer:
+            # Validate coordinates
+            validation = geographer.validate_coordinates(
+                config.get('POUR_POINT_COORDS'),
+                config.get('BOUNDING_BOX_COORDS')
+            )
+            
+            if not validation['valid']:
+                # Update coordinates with validated versions
+                config['POUR_POINT_COORDS'] = validation['pour_point']
+                config['BOUNDING_BOX_COORDS'] = validation['bounding_box']
+                
+                # Add validation justification to overall justification
+                justification_summary += "\n\nCoordinate Adjustments:\n" + validation['justification']
+                
+                self.logger.info("Coordinates adjusted based on geographer validation:")
+                for adj in validation['adjustments']:
+                    self.logger.info(f"- {adj}")
         
         return config, justification_summary
 
@@ -542,7 +636,8 @@ class INDRA:
             HydrologistExpert(self.api),
             DataScienceExpert(self.api),
             HydrogeologyExpert(self.api),
-            MeteorologicalExpert(self.api)
+            MeteorologicalExpert(self.api),
+            GeographerExpert(self.api)  # Add the new expert
         ]
         self.chairperson = Chairperson(self.experts, self.api)
 
