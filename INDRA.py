@@ -318,99 +318,111 @@ class GeographerExpert(Expert):
     def validate_coordinates(self, pour_point: str, bounding_box: str) -> Dict[str, Any]:
         """
         Validate proposed coordinates against spatial criteria.
-        
-        Args:
-            pour_point: String of format "lat/lon"
-            bounding_box: String of format "lat_max/lon_min/lat_min/lon_max"
-            
-        Returns:
-            Dict containing validation results and any necessary adjustments
         """
-        system_message = "You are a world-class expert geographer validating watershed coordinates."
+        system_message = """You are a world-class expert geographer validating watershed coordinates.
+        You must respond in the exact format specified, with each section clearly marked and separated by double newlines."""
         
         prompt = f"""
-        Please validate the following watershed coordinates:
+        Analyze and validate these watershed coordinates:
         Pour point: {pour_point}
         Bounding box: {bounding_box}
-        
-        Verify that:
-        1. The pour point coordinates:
-           - Lie on a known river channel (use available hydrographic data)
-           - Are at least 10km upstream from any major confluence
-           - Are at least 15km upstream from any estuary
-           - Have appropriate precision (6 decimal places)
-        
-        2. The bounding box:
-           - Extends at least 50km beyond likely watershed boundaries
-           - Includes ALL potential tributary headwaters
-           - Has significant margin beyond drainage divides
-           - Fully contains the pour point with at least 30km margin
-           - Has appropriate precision (2 decimal places)
-        
-        If any issues are found:
-        1. Adjust pour point coordinates if needed to meet stream and distance criteria
-        2. Expand bounding box if coverage is insufficient
-        3. Explain your reasoning for any changes
 
-        Respond with a clear YES or NO for validation, followed by any adjustments and justification.
-        If changes are needed, provide the new coordinates in the exact same format as the input.
+        Requirements:
+        1. Pour point must:
+           - Be on a main river channel
+           - Be at least 10km upstream from confluences
+           - Be at least 15km upstream from estuaries
+           - Use 6 decimal places
         
-        Format your response like this:
-        VALIDATION: YES or NO
+        2. Bounding box must:
+           - Extend 50km beyond watershed boundaries
+           - Include all tributary headwaters
+           - Have significant margin beyond divides
+           - Fully contain pour point with 30km margin
+           - Use 2 decimal places
 
-        POUR_POINT: lat/lon (only if changes needed)
-        BOUNDING_BOX: lat_max/lon_min/lat_min/lon_max (only if changes needed)
+        YOU MUST STRUCTURE YOUR RESPONSE EXACTLY AS FOLLOWS, WITH EACH SECTION SEPARATED BY DOUBLE NEWLINES:
+
+        VALIDATION:
+        [Write only YES or NO]
+
+        POUR_POINT:
+        [If changes needed, write new coordinates in exact format lat/lon. If no changes, write UNCHANGED]
+
+        BOUNDING_BOX:
+        [If changes needed, write new coordinates in exact format lat_max/lon_min/lat_min/lon_max. If no changes, write UNCHANGED]
 
         ADJUSTMENTS:
-        - List each adjustment made
-        
+        [List each specific change made, one per line with leading hyphen]
+
         JUSTIFICATION:
-        Detailed explanation of validation and any changes
+        [Explain validation and changes]
+
+        Example correct response format:
+        VALIDATION:
+        NO
+
+        POUR_POINT:
+        48.123456/2.123456
+
+        BOUNDING_BOX:
+        49.12/1.23/47.45/3.67
+
+        ADJUSTMENTS:
+        - Moved pour point 2km upstream to avoid confluence
+        - Expanded northern boundary by 15km for safety margin
+        - Expanded eastern boundary to include potential tributaries
+
+        JUSTIFICATION:
+        Original pour point was too close to confluence. Bounding box needed expansion to ensure complete watershed capture.
         """
         
         response = self.api.generate_text(prompt, system_message)
         
-        # Parse the response safely
         try:
-            # Split response into sections
-            sections = response.split('\n\n')
+            # Split into sections
+            sections = {
+                section.split(':\n', 1)[0]: section.split(':\n', 1)[1].strip()
+                for section in response.split('\n\n')
+                if ':' in section
+            }
             
-            # Initialize result dictionary
+            # Initialize result
             result = {
-                "valid": False,
+                "valid": sections.get('VALIDATION', '').strip().upper() == 'YES',
                 "pour_point": pour_point,  # Default to original
                 "bounding_box": bounding_box,  # Default to original
                 "adjustments": [],
-                "justification": ""
+                "justification": sections.get('JUSTIFICATION', 'No justification provided')
             }
             
-            # Parse each section
-            for section in sections:
-                if section.startswith('VALIDATION:'):
-                    result['valid'] = 'YES' in section.upper()
-                
-                elif section.startswith('POUR_POINT:'):
-                    new_pour_point = section.split(':', 1)[1].strip()
-                    if new_pour_point:
-                        result['pour_point'] = new_pour_point
-                        result['adjustments'].append(f"Updated pour point to {new_pour_point}")
-                
-                elif section.startswith('BOUNDING_BOX:'):
-                    new_bbox = section.split(':', 1)[1].strip()
-                    if new_bbox:
-                        result['bounding_box'] = new_bbox
-                        result['adjustments'].append(f"Updated bounding box to {new_bbox}")
-                
-                elif section.startswith('ADJUSTMENTS:'):
-                    adjustments = section.split(':', 1)[1].strip().split('\n')
-                    result['adjustments'].extend([adj.strip('- ').strip() for adj in adjustments if adj.strip('- ').strip()])
-                
-                elif section.startswith('JUSTIFICATION:'):
-                    result['justification'] = section.split(':', 1)[1].strip()
+            # Process pour point
+            new_pour_point = sections.get('POUR_POINT', '').strip()
+            if new_pour_point and new_pour_point != 'UNCHANGED':
+                if self._validate_pour_point_format(new_pour_point):
+                    result['pour_point'] = new_pour_point
+                    result['adjustments'].append(f"Updated pour point to {new_pour_point}")
+                else:
+                    raise ValueError(f"Invalid pour point format: {new_pour_point}")
             
-            # Validate the coordinates format
-            if not self._validate_coordinate_format(result['pour_point'], result['bounding_box']):
-                raise ValueError("Invalid coordinate format in response")
+            # Process bounding box
+            new_bbox = sections.get('BOUNDING_BOX', '').strip()
+            if new_bbox and new_bbox != 'UNCHANGED':
+                if self._validate_bbox_format(new_bbox):
+                    result['bounding_box'] = new_bbox
+                    result['adjustments'].append(f"Updated bounding box to {new_bbox}")
+                else:
+                    raise ValueError(f"Invalid bounding box format: {new_bbox}")
+            
+            # Add adjustments
+            adjustments_text = sections.get('ADJUSTMENTS', '')
+            if adjustments_text:
+                additional_adjustments = [
+                    adj.strip('- ').strip()
+                    for adj in adjustments_text.split('\n')
+                    if adj.strip('- ').strip()
+                ]
+                result['adjustments'].extend(additional_adjustments)
             
             return result
             
@@ -418,42 +430,47 @@ class GeographerExpert(Expert):
             print(f"Error parsing geographer response: {str(e)}")
             print(f"Raw response:\n{response}")
             
-            # Return a valid dictionary indicating validation failed
             return {
                 "valid": False,
                 "pour_point": pour_point,
                 "bounding_box": bounding_box,
-                "adjustments": ["Validation failed due to parsing error"],
-                "justification": f"Error during coordinate validation: {str(e)}"
+                "adjustments": ["Validation failed: formatting error in expert response"],
+                "justification": f"Coordinate validation failed due to response parsing error: {str(e)}"
             }
 
-    def _validate_coordinate_format(self, pour_point: str, bounding_box: str) -> bool:
-        """
-        Validate the format of coordinates.
-        
-        Args:
-            pour_point: String of format "lat/lon"
-            bounding_box: String of format "lat_max/lon_min/lat_min/lon_max"
-            
-        Returns:
-            bool: True if formats are valid
-        """
+    def _validate_pour_point_format(self, pour_point: str) -> bool:
+        """Validate pour point coordinate format."""
         try:
-            # Validate pour point format
-            pp_parts = pour_point.split('/')
-            if len(pp_parts) != 2:
+            lat, lon = pour_point.split('/')
+            lat_float, lon_float = float(lat), float(lon)
+            # Check for reasonable coordinate ranges
+            if not (-90 <= lat_float <= 90 and -180 <= lon_float <= 180):
                 return False
-            float(pp_parts[0]), float(pp_parts[1])  # Check if convertible to float
-            
-            # Validate bounding box format
-            bb_parts = bounding_box.split('/')
-            if len(bb_parts) != 4:
+            # Check decimal places
+            if len(lat.split('.')[-1]) != 6 or len(lon.split('.')[-1]) != 6:
                 return False
-            for part in bb_parts:
-                float(part)  # Check if convertible to float
-            
             return True
-        except (ValueError, AttributeError):
+        except:
+            return False
+
+    def _validate_bbox_format(self, bbox: str) -> bool:
+        """Validate bounding box coordinate format."""
+        try:
+            lat_max, lon_min, lat_min, lon_max = bbox.split('/')
+            coords = [float(lat_max), float(lon_min), float(lat_min), float(lon_max)]
+            # Check for reasonable coordinate ranges
+            if not all(-90 <= c <= 90 for c in [coords[0], coords[2]]):
+                return False
+            if not all(-180 <= c <= 180 for c in [coords[1], coords[3]]):
+                return False
+            # Check decimal places
+            if not all(len(str(c).split('.')[-1]) == 2 for c in coords):
+                return False
+            # Check logical ordering
+            if coords[0] <= coords[2] or coords[3] <= coords[1]:
+                return False
+            return True
+        except:
             return False
 
 class Chairperson:
