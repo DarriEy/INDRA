@@ -6,6 +6,7 @@ import os
 import sys
 import subprocess
 import time
+import shutil
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from CONFLUENCE.CONFLUENCE import CONFLUENCE # type: ignore
@@ -76,13 +77,43 @@ EXPERT_PROMPTS = {
 
 
 class AnthropicAPI:
-    """A wrapper for the Anthropic API."""
+    """
+    Wrapper for Anthropic's Claude API providing controlled access to language model capabilities.
+    
+    Manages interactions with the Anthropic API, handling prompt construction,
+    response processing, and error handling for expert consultations.
+
+    Attributes:
+        client (anthropic.Anthropic): Authenticated Anthropic API client
+    """
 
     def __init__(self, api_key):
+        """
+        Initialize Anthropic API client with authentication.
+
+        Args:
+            api_key (str): Anthropic API authentication key
+        """
         self.client = anthropic.Anthropic(api_key=api_key)
 
     def generate_text(self, prompt: str, system_message: str, max_tokens: int = 1750) -> str:
-        """Generate text using the Anthropic API."""
+        """
+        Generate text response using Anthropic's Claude model.
+
+        Creates a structured prompt combining system context and user query,
+        manages token limits, and processes model response.
+
+        Args:
+            prompt (str): Main prompt/query text
+            system_message (str): System context/instruction message
+            max_tokens (int, optional): Maximum response length. Defaults to 1750.
+
+        Returns:
+            str: Generated response text
+
+        Raises:
+            anthropic.APIError: If API request fails
+        """
         message = self.client.messages.create(
             model="claude-3-5-sonnet-20240620",
             max_tokens=max_tokens,
@@ -103,6 +134,19 @@ class AnthropicAPI:
         return message.content[0].text
 
 class Expert:
+    """
+    Base class for specialized AI expert agents in the INDRA system.
+    
+    Each expert agent provides domain-specific analysis of CONFLUENCE model configurations
+    and watershed characteristics. Experts utilize the Anthropic API to generate insights
+    within their area of expertise.
+
+    Attributes:
+        name (str): Identifier for the expert
+        expertise (str): Domain of expertise
+        api (AnthropicAPI): Interface to language model API
+        prompt (str): Expert-specific prompt template for analysis
+    """
     def __init__(self, name: str, expertise: str, api: AnthropicAPI):
         self.name = name
         self.expertise = expertise
@@ -110,6 +154,20 @@ class Expert:
         self.prompt = EXPERT_PROMPTS[name]
 
     def analyze_settings(self, settings: Dict[str, Any], confluence_results: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Analyze CONFLUENCE model settings from expert's domain perspective.
+
+        Generates domain-specific insights and recommendations based on model configuration
+        and results if available.
+
+        Args:
+            settings (Dict[str, Any]): CONFLUENCE model configuration settings
+            confluence_results (Optional[Dict[str, Any]]): Results from model execution
+
+        Returns:
+            Dict[str, Any]: Analysis results containing:
+                - full_analysis (str): Detailed expert analysis and recommendations
+        """
         summarized_settings = summarize_settings(settings)
         system_message = f"You are a world-class expert in {self.expertise} with extensive knowledge of the CONFLUENCE model. Provide insightful analysis of the given model settings, focusing on your area of expertise."
         prompt = f"{self.prompt}\n\nAnalyze the following CONFLUENCE model settings, focusing on {self.expertise}. Provide insights and suggestions:\n\n{summarized_settings}"
@@ -121,13 +179,37 @@ class Expert:
         return {"full_analysis": analysis}
 
 class HydrologistExpert(Expert):
-    """Expert in hydrological processes and model structure."""
+    """
+    Expert agent specializing in hydrological processes and model structure.
+    
+    Provides analysis focusing on:
+    - Appropriateness of model structure for watershed
+    - Representation of hydrological processes
+    - Process parameterization
+    - Scale considerations
+    - Dominant hydrological processes
+    """
 
     def __init__(self, api: AnthropicAPI):
         super().__init__("Hydrologist Expert", "hydrological processes and model structure", api)
 
     def generate_perceptual_model(self, settings: Dict[str, Any]) -> str:
-        """Generate a perceptual model summary for the domain being modelled."""
+        """
+        Generate hydrological perceptual model for watershed.
+
+        Creates detailed conceptual model of watershed hydrological behavior,
+        incorporating:
+        - Key hydrological processes
+        - Process interactions and connectivity
+        - Spatial and temporal dynamics
+        - Previous modeling insights from literature
+
+        Args:
+            settings (Dict[str, Any]): Basic watershed configuration settings
+
+        Returns:
+            str: Detailed perceptual model description with literature references
+        """
         summarized_settings = summarize_settings(settings)
         system_message = "You are a world-class hydrologist. Create a concise perceptual model summary for the given domain based on the CONFLUENCE model settings."
         prompt = f'''Based on the following CONFLUENCE model domain, generate a detailed and extensive perceptual model summary for the domain being modelled, 
@@ -181,7 +263,17 @@ class MeteorologicalExpert(Expert):
         return perceptual_model
 
 class Chairperson:
-    """Chairperson of the INDRA system, responsible for coordinating experts and generating the final report."""
+    """
+    Coordinator for the INDRA expert panel system.
+    
+    The Chairperson manages expert consultation, synthesizes expert analyses,
+    and generates comprehensive reports and recommendations. Acts as the primary
+    interface between the expert panel and the INDRA system.
+
+    Attributes:
+        experts (List[Expert]): Panel of expert agents
+        api (AnthropicAPI): Interface to language model API
+    """
     def __init__(self, experts: List[Expert], api: AnthropicAPI):
         self.experts = experts
         self.api = api
@@ -192,14 +284,39 @@ class Chairperson:
             return yaml.safe_load(f)
 
     def consult_experts(self, settings: Dict[str, Any], confluence_results: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Consult all experts and gather their analyses."""
+        """
+        Coordinate expert panel consultation process.
+
+        Gathers analyses from all experts and compiles their insights.
+
+        Args:
+            settings (Dict[str, Any]): CONFLUENCE configuration settings
+            confluence_results (Optional[Dict[str, Any]]): Model execution results
+
+        Returns:
+            Dict[str, Any]: Compiled expert analyses keyed by expert name
+        """
         synthesis = {}
         for expert in self.experts:
             synthesis[expert.name] = expert.analyze_settings(settings, confluence_results)
         return synthesis
 
     def generate_report(self, settings: Dict[str, Any], synthesis: Dict[str, Any], confluence_results: Optional[Dict[str, Any]] = None) -> Tuple[Dict[str, str], Dict[str, Any]]:
-        """Generate a comprehensive report based on expert analyses."""
+        """
+        Generate comprehensive analysis report from expert consultations.
+
+        Synthesizes expert analyses into coherent report and actionable suggestions.
+
+        Args:
+            settings (Dict[str, Any]): Model configuration settings
+            synthesis (Dict[str, Any]): Compiled expert analyses
+            confluence_results (Optional[Dict[str, Any]]): Model execution results
+
+        Returns:
+            Tuple[Dict[str, str], Dict[str, Any]]: Contains:
+                - Report dictionary with panel_summary and concluded_summary
+                - Configuration suggestions dictionary
+        """
         summarized_settings = summarize_settings(settings)
         
         # Generate panel discussion summary
@@ -298,7 +415,20 @@ class Chairperson:
         print(f"Updated configuration saved to {file_path}")
 
     def expert_initiation(self, watershed_name: str) -> Tuple[Dict[str, Any], str]:
-        """Consult experts to determine optimal initial settings for the given watershed."""
+        """
+        Generate expert-guided initial configuration for new watershed.
+
+        Coordinates expert panel to determine optimal initial settings based on
+        watershed characteristics and modeling best practices.
+
+        Args:
+            watershed_name (str): Name of watershed to be modeled
+
+        Returns:
+            Tuple[Dict[str, Any], str]: Contains:
+                - Initial configuration dictionary
+                - Justification for configuration choices
+        """
         
         system_message = '''You are the chairperson of INDRA, coordinating a panel of hydrological modeling experts 
                             to determine optimal initial settings for a CONFLUENCE model configuration.'''
@@ -308,16 +438,116 @@ class Chairperson:
 
         As the panel of experts, please suggest optimal initial settings for the following configuration parameters:
 
-        1. HYDROLOGICAL_MODEL (options: SUMMA, FLASH)
+        1. HYDROLOGICAL_MODEL (options: SUMMA, FUSE, FLASH)
         2. ROUTING_MODEL (options: mizuroute)
         3. FORCING_DATASET (options: RDRS, ERA5)
         4. DOMAIN_DISCRETIZATION method (options, elevation, soilclass, landclass)
         5. ELEVATION_BAND_SIZE (if using elevation-based discretization)
         6. MIN_HRU_SIZE: Minimum size of the model domain HRUs, in km2 recommended 10 km2 for large watersheds and 1 km2 for small watersheds
         7. POUR_POINT_COORDS: coordinates lat/lon to define watershed to delineate must be specified as decimals with 6 digits 
-                             in the format 'lat/lon'. Select coordinates on the river main step close at estuary or confluence.
+                             in the format 'lat/lon'. Select coordinates on the river main step. Make sure to select a point that is not close to a confluence or 
+                             in the estuary as these areas can be problematic for the delineation.
         8. BOUNDING_BOX_COORDS: coordinates of the bounding box of the watershed must be specified as decimals with 2 digits 
-                               in the format 'lat_max/lon_min/lat_min/lon_max'. Make sure you include the whole watershed of the river and add a generous buffer around it to be safe
+                               in the format 'lat_max/lon_min/lat_min/lon_max'. Make sure you include the whole watershed of the river and add a generous buffer around it to be safe. 
+                               Be sure that the Boundaries include the Pour Point Coords from 7.
+        9. PARAMS_TO_CALIBRATE: If HYDROLOGICAL_MODEL is SUMMA, select which parameters to calibrate. Options are: upperBoundHead,lowerBoundHead,upperBoundTheta,lowerBoundTheta,upperBoundTemp,lowerBoundTemp,tempCritRain,tempRangeTimestep,frozenPrecipMultip,snowfrz_scale,fixedThermalCond_snow,albedoMax,albedoMinWinter,albedoMinSpring,albedoMaxVisible,albedoMinVisible,albedoMaxNearIR,albedoMinNearIR,albedoDecayRate,albedoSootLoad,albedoRefresh,radExt_snow,directScale,Frad_direct,Frad_vis,newSnowDenMin,newSnowDenMult,newSnowDenScal,constSnowDen,newSnowDenAdd,newSnowDenMultTemp,newSnowDenMultWind,newSnowDenMultAnd,newSnowDenBase,densScalGrowth,tempScalGrowth,grainGrowthRate,densScalOvrbdn,tempScalOvrbdn,baseViscosity,Fcapil,k_snow,mw_exp,z0Snow,z0Soil,z0Canopy,zpdFraction,critRichNumber,Louis79_bparam,Louis79_cStar,Mahrt87_eScale,leafExchangeCoeff,windReductionParam,Kc25,Ko25,Kc_qFac,Ko_qFac,kc_Ha,ko_Ha,vcmax25_canopyTop,vcmax_qFac,vcmax_Ha,vcmax_Hd,vcmax_Sv,vcmax_Kn,jmax25_scale,jmax_Ha,jmax_Hd,jmax_Sv,fractionJ,quantamYield,vpScaleFactor,cond2photo_slope,minStomatalConductance,winterSAI,summerLAI,rootScaleFactor1,rootScaleFactor2,rootingDepth,rootDistExp,plantWiltPsi,soilStressParam,critSoilWilting,critSoilTranspire,critAquiferTranspire,minStomatalResistance,leafDimension,heightCanopyTop,heightCanopyBottom,specificHeatVeg,maxMassVegetation,throughfallScaleSnow,throughfallScaleRain,refInterceptCapSnow,refInterceptCapRain,snowUnloadingCoeff,canopyDrainageCoeff,ratioDrip2Unloading,canopyWettingFactor,canopyWettingExp,soil_dens_intr,thCond_soil,frac_sand,frac_silt,frac_clay,fieldCapacity,wettingFrontSuction,theta_mp,theta_sat,theta_res,vGn_alpha,vGn_n,mpExp,k_soil,k_macropore,kAnisotropic,zScale_TOPMODEL,compactedDepth,aquiferBaseflowRate,aquiferScaleFactor,aquiferBaseflowExp,qSurfScale,specificYield,specificStorage,f_impede,soilIceScale,soilIceCV,minwind,minstep,maxstep,wimplicit,maxiter,relConvTol_liquid,absConvTol_liquid,relConvTol_matric,absConvTol_matric,relConvTol_energy,absConvTol_energy,relConvTol_aquifr,absConvTol_aquifr,zmin,zmax,zminLayer1,zminLayer2,zminLayer3,zminLayer4,zminLayer5,zmaxLayer1_lower,zmaxLayer2_lower,zmaxLayer3_lower,zmaxLayer4_lower,zmaxLayer1_upper,zmaxLayer2_upper,zmaxLayer3_upper,zmaxLayer4_upper,minTempUnloading,minWindUnloading,rateTempUnloading,rateWindUnloading
+        10. DECISION_OPTIONS: If HYDROLOGICAL_MODEL is SUMMA, select which combinations of model decisions to try: model_decisions:
+                                                        soilCatTbl:
+                                                            - STAS
+                                                            - STAS-RUC
+                                                            - ROSETTA
+                                                        vegeParTbl:
+                                                            - USGS
+                                                            - MODIFIED_IGBP_MODIS_NOAH
+                                                        soilStress:
+                                                            - NoahType
+                                                            - CLM_Type
+                                                            - SiB_Type
+                                                        stomResist:
+                                                            - BallBerry
+                                                            - Jarvis
+                                                        num_method:
+                                                            - itertive
+                                                            - non_iter
+                                                            - itersurf
+                                                        fDerivMeth:
+                                                            - numericl
+                                                            - analytic
+                                                        LAI_method:
+                                                            - monTable
+                                                            - specified
+                                                        f_Richards:
+                                                            - moisture
+                                                            - mixdform
+                                                        groundwatr:
+                                                            - qTopmodl
+                                                            - bigBuckt
+                                                            - noXplict
+                                                        hc_profile:
+                                                            - constant
+                                                            - pow_prof
+                                                        bcUpprTdyn:
+                                                            - presTemp
+                                                            - nrg_flux
+                                                        bcLowrTdyn:
+                                                            - presTemp
+                                                            - zeroFlux
+                                                        bcUpprSoiH:
+                                                            - presHead
+                                                            - liq_flux
+                                                        bcLowrSoiH:
+                                                            - drainage
+                                                            - presHead
+                                                            - bottmPsi
+                                                            - zeroFlux
+                                                        veg_traits:
+                                                            - Raupach_BLM1994
+                                                            - CM_QJRMS1998
+                                                            - vegTypeTable
+                                                        canopyEmis:
+                                                            - simplExp
+                                                            - difTrans
+                                                        snowIncept:
+                                                            - stickySnow
+                                                            - lightSnow
+                                                        windPrfile:
+                                                            - exponential
+                                                            - logBelowCanopy
+                                                        astability:
+                                                            - standard
+                                                            - louisinv
+                                                            - mahrtexp
+                                                        canopySrad:
+                                                            - noah_mp
+                                                            - CLM_2stream
+                                                            - UEB_2stream
+                                                            - NL_scatter
+                                                            - BeersLaw
+                                                        alb_method:
+                                                            - conDecay
+                                                            - varDecay
+                                                        compaction:
+                                                            - consettl
+                                                            - anderson
+                                                        snowLayers:
+                                                            - CLM_2010
+                                                            - jrdn1991
+                                                        thCondSnow:
+                                                            - tyen1965
+                                                            - melr1977
+                                                            - jrdn1991
+                                                            - smnv2000
+                                                        thCondSoil:
+                                                            - funcSoilWet
+                                                            - mixConstit
+                                                            - hanssonVZJ
+                                                        spatial_gw:
+                                                            - localColumn
+                                                            - singleBasin
+                                                        subRouting:
+                                                            - timeDlay
+                                                            - qInstant
+
 
         For each parameter, provide a brief justification for your recommendation.
 
@@ -363,16 +593,29 @@ class INDRA:
     """
     Intelligent Network for Dynamic River Analysis (INDRA)
 
-    INDRA is a system that analyzes CONFLUENCE model settings using a panel of expert AI agents.
-    It provides comprehensive insights and suggestions for improving hydrological modeling.
+    INDRA is an AI-powered expert system for hydrological modeling analysis and configuration.
+    It uses a panel of specialized AI experts to analyze and optimize CONFLUENCE model setups,
+    generate perceptual models, and provide comprehensive insights for model improvement.
+
+    The system coordinates multiple expert agents specializing in different aspects of 
+    hydrological modeling (hydrology, data science, hydrogeology, meteorology) and synthesizes
+    their insights through a chairperson agent.
+
+    Key Features:
+        - Perceptual model generation for watersheds
+        - Automated initial configuration based on expert knowledge
+        - Multi-expert analysis of model settings
+        - Batch processing support for HPC environments
+        - Comprehensive reporting and suggestions
 
     Attributes:
-        api (AnthropicAPI): The API for interacting with the Anthropic language model.
-        experts (List[Expert]): A list of expert AI agents specialized in various aspects of hydrological modeling.
-        chairperson (Chairperson): The chairperson who coordinates the experts and generates the final report.
+        api (AnthropicAPI): Interface to the Anthropic language model API
+        experts (List[Expert]): Panel of expert AI agents
+        chairperson (Chairperson): Coordinator for expert panel discussions
 
-    Methods:
-        run(control_file_path: Path) -> str: Run the INDRA analysis on the given CONFLUENCE control file.
+    Example:
+        >>> indra = INDRA()
+        >>> analysis_results, suggestions = indra.run("my_watershed_config.yaml")
     """
 
     def __init__(self):
@@ -401,13 +644,21 @@ class INDRA:
 
     def _generate_perceptual_models(self, watershed_name: str) -> Dict[str, str]:
         """
-        Generate perceptual models from each domain expert.
+        Generate domain-specific perceptual models from multiple expert perspectives.
         
+        Consults hydrologist, hydrogeologist, and meteorological experts to create
+        comprehensive perceptual models of the watershed's behavior. Each expert 
+        provides insights from their domain of expertise.
+
         Args:
-            watershed_name (str): Name of the watershed being modeled.
-        
+            watershed_name (str): Name of the watershed to model
+
         Returns:
-            Dict[str, str]: Dictionary containing perceptual models from each expert.
+            Dict[str, str]: Dictionary mapping expert names to their perceptual model descriptions
+
+        Note:
+            The generated models combine theoretical knowledge with literature-based insights
+            specific to the given watershed or similar watersheds.
         """
         print("Consulting domain experts for perceptual model generation...")
         
@@ -425,11 +676,11 @@ class INDRA:
 
     def _save_perceptual_models(self, file_path: Path, perceptual_models: Dict[str, str]):
         """
-        Save perceptual models to a formatted text file.
-        
+        Save generated perceptual models to formatted text file.
+
         Args:
-            file_path (Path): Path to save the perceptual models.
-            perceptual_models (Dict[str, str]): Dictionary of perceptual models from each expert.
+            file_path (Path): Output file path
+            perceptual_models (Dict[str, str]): Expert perceptual models
         """
         with open(file_path, 'w') as f:
             f.write("INDRA Perceptual Models Report\n")
@@ -444,13 +695,13 @@ class INDRA:
     def _save_synthesis_report(self, report: Dict[str, str], suggestions: Dict[str, Any], 
                           watershed_name: str, report_path: Path):
         """
-        Save the synthesis report for an existing project.
-        
+        Save synthesis report and configuration suggestions.
+
         Args:
-            report (Dict[str, str]): The generated report
+            report (Dict[str, str]): Analysis report
             suggestions (Dict[str, Any]): Configuration suggestions
-            watershed_name (str): Name of the watershed
-            report_path (Path): Directory to save the report
+            watershed_name (str): Name of watershed
+            report_path (Path): Output directory path
         """
         synthesis_file = report_path / f"synthesis_report_{watershed_name}.txt"
         
@@ -540,7 +791,11 @@ class INDRA:
             
             # Run CONFLUENCE with initial configuration and wait for completion
             print("\nRunning CONFLUENCE with initial configuration...")
-            job_info = self.run_confluence(control_file_path)
+
+            if shutil.which('sbatch') is not None:
+                job_info = self.run_confluence_batch(control_file_path)
+            else:
+                job_info = self.run_confluence_interactive(control_file_path)
             
             if 'error' in job_info:
                 print(f"Error submitting CONFLUENCE job: {job_info['error']}")
@@ -585,11 +840,11 @@ class INDRA:
 
     def _check_job_status(self, job_id: str) -> str:
         """
-        Check the status of a SLURM job.
-        
+        Check status of SLURM job.
+
         Args:
-            job_id (str): SLURM job ID
-            
+            job_id (str): SLURM job identifier
+
         Returns:
             str: Job status (PENDING, RUNNING, COMPLETED, FAILED, etc.)
         """
@@ -607,14 +862,14 @@ class INDRA:
 
     def _read_confluence_results(self, config_path: Path, job_id: str) -> Optional[Dict[str, Any]]:
         """
-        Read the results from a completed CONFLUENCE run.
-        
+        Read and parse results from completed CONFLUENCE run.
+
         Args:
-            config_path (Path): Path to the configuration file
-            job_id (str): SLURM job ID
-            
+            config_path (Path): Configuration file path
+            job_id (str): SLURM job identifier
+
         Returns:
-            Optional[Dict[str, Any]]: CONFLUENCE results if available
+            Optional[Dict[str, Any]]: Results dictionary if available
         """
         try:
             # Read the configuration to get output paths
@@ -651,14 +906,14 @@ class INDRA:
     
     def _modify_configuration(self, settings: Dict[str, Any], expert_config: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
-        Allow user to modify only INDRA-suggested configuration settings interactively.
-        
+        Interactively modify INDRA-suggested configuration settings.
+
         Args:
             settings (Dict[str, Any]): Current configuration settings
             expert_config (Dict[str, Any]): Expert-suggested configurations
-            
+
         Returns:
-            Optional[Dict[str, Any]]: Modified settings if changes were made, None otherwise
+            Optional[Dict[str, Any]]: Modified settings or None if cancelled
         """
         updated_settings = settings.copy()
         
@@ -702,7 +957,7 @@ class INDRA:
                 print(f"Setting '{key}' is not an INDRA-suggested configuration and cannot be modified.")
                 print("Modifiable settings are:", ', '.join(modifiable_settings.keys()))
         
-        return updated_settings
+            return updated_settings
                 
     def _initialize_new_project(self, watershed_name: str) -> Tuple[Path, Dict[str, Any]]:
         """
@@ -805,12 +1060,12 @@ class INDRA:
     def _create_config_file_from_template(self, template_path: Path, output_path: Path, 
                                     watershed_name: str, expert_config: Dict[str, Any]):
         """
-        Create a new configuration file from template while preserving structure and comments.
-        
+        Generate configuration file from template with expert suggestions.
+
         Args:
-            template_path (Path): Path to template file
-            output_path (Path): Path to save new config file
-            watershed_name (str): Name of the watershed
+            template_path (Path): Template configuration file path
+            output_path (Path): Output configuration file path
+            watershed_name (str): Name of watershed
             expert_config (Dict[str, Any]): Expert-suggested configurations
         """
         if not template_path.exists():
@@ -851,8 +1106,8 @@ class INDRA:
                         f.write(line)
                 else:
                     f.write(line)
-    '''
-    def run_confluence(self, config_path: Path) -> Dict[str, Any]:
+    
+    def run_confluence_interactive(self, config_path: Path) -> Dict[str, Any]:
         """
         Run CONFLUENCE with the given configuration file.
 
@@ -862,6 +1117,7 @@ class INDRA:
         Returns:
             Dict[str, Any]: Results from the CONFLUENCE run.
         """
+        print('Running CONFLUENCE in interactive mode')
         confluence = CONFLUENCE(config_path)  # Initialize CONFLUENCE
 
         try:            
@@ -876,18 +1132,28 @@ class INDRA:
         except Exception as e:
             print(f"Error running CONFLUENCE: {str(e)}")
             return {"error": str(e)}
-    ''' 
 
-    def run_confluence(self, config_path: Path) -> Dict[str, Any]:
+    def run_confluence_batch(self, config_path: Path) -> Dict[str, Any]:
         """
-        Run CONFLUENCE with the given configuration file using SLURM batch system.
+        Execute CONFLUENCE model using HPC batch system (SLURM).
+
+        Submits CONFLUENCE job to HPC queue and provides job monitoring capabilities.
+        Creates necessary batch scripts and handles job submission process.
 
         Args:
-            config_path (Path): Path to the configuration file.
+            config_path (Path): Path to CONFLUENCE configuration file
 
         Returns:
-            Dict[str, Any]: Results from the CONFLUENCE run.
+            Dict[str, Any]: Job information including:
+                - job_id: SLURM job identifier
+                - status: Current job status
+                - error: Error message if submission failed
+
+        Raises:
+            subprocess.CalledProcessError: If job submission fails
+            FileNotFoundError: If configuration file not found
         """
+        print('Running CONFLUENCE in batch mode')
         try:
             # Read the configuration file to get necessary parameters
             with open(config_path, 'r') as f:
@@ -912,14 +1178,14 @@ class INDRA:
 
     def _create_slurm_script(self, config_path: Path, config: Dict[str, Any]) -> Path:
         """
-        Create a SLURM submission script for CONFLUENCE.
-        
+        Create SLURM batch submission script for CONFLUENCE execution.
+
         Args:
-            config_path (Path): Path to CONFLUENCE configuration file
-            config (Dict[str, Any]): Configuration dictionary containing parameters
-            
+            config_path (Path): Path to configuration file
+            config (Dict[str, Any]): Configuration parameters
+
         Returns:
-            Path: Path to created SLURM script
+            Path: Path to generated SLURM script
         """
         script_path = config_path.parent.parent / "run_confluence_batch.sh"
         
@@ -982,7 +1248,16 @@ python ../CONFLUENCE/CONFLUENCE.py --config {str(Path(config['CONFLUENCE_CODE_DI
         return analysis
  
 def summarize_settings(settings: Dict[str, Any], max_length: int = 2000) -> str:
-    """Summarize the settings to a maximum length."""
+    """
+    Create concise summary of configuration settings within length limit.
+
+    Args:
+        settings (Dict[str, Any]): Configuration settings to summarize
+        max_length (int): Maximum summary length in characters
+
+    Returns:
+        str: Truncated settings summary
+    """
     settings_str = yaml.dump(settings)
     if len(settings_str) <= max_length:
         return settings_str
@@ -998,13 +1273,13 @@ def summarize_settings(settings: Dict[str, Any], max_length: int = 2000) -> str:
 
 def _sanitize_watershed_name(name: str) -> str:
     """
-    Sanitize watershed name by replacing spaces with underscores and removing any special characters.
-    
+    Clean watershed name for use in file paths and identifiers.
+
     Args:
-        name (str): Original watershed name
-        
+        name (str): Raw watershed name
+
     Returns:
-        str: Sanitized watershed name
+        str: Sanitized name with spaces replaced and special characters removed
     """
     # Replace spaces with underscores
     sanitized = name.strip().replace(' ', '_')

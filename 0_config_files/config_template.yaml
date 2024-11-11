@@ -41,7 +41,7 @@ DOMAIN_DEFINITION_METHOD: delineate                            # Define domain r
 GEOFABRIC_TYPE: TDX                                            # Source geofabric to subset from, current options: Merit, TDX, NWS
 STREAM_THRESHOLD: 10000                                        # Threshold flow accumulation for stream vectorisation
 LUMPED_WATERSHED_METHOD: TauDEM                                # Use pysheds or TauDEM for lumped delineation
-CLEANUP_INTERMEDIATE_FILES: False                              # Remove temporary files from delieation
+CLEANUP_INTERMEDIATE_FILES: True                               # Remove temporary files from delieation
 DELINEATE_BY_POURPOINT: True                                   # Delineate watershed from pour point
 
 # Domain discretization settings
@@ -90,7 +90,6 @@ SOIL_CLASS_NAME: default                                       # Name of soil cl
 LAND_CLASS_PATH: default                                       # Path to land classification raster. If 'default', uses root_path/domain_[name]/attributes/landclass      
 LAND_CLASS_NAME: default                                        # Name of land classification raster
 RADIATION_PATH: default                                        # Path to radiation classification raster. If 'default', uses root_path/domain_[name]/attributes/radiation 
-BASEMAP_PATH: /home/darri/projects/def-mclark-ab/darri/data/basemap/global_basemap.tif
 
 # Tool paths
 DATATOOL_PATH: default                                         # Path to datatool executable 
@@ -99,9 +98,9 @@ GISTOOL_PATH: default                                          # Path to gistool
 GISTOOL_DATASET_ROOT: /project/rrg-mclark/data/geospatial-data/         # Path to gistool datasets root directory
 GISTOOL_LIB_PATH: /project/rrg-mclark/lib/                     # Path to gistool libraries
 TOOL_ACCOUNT: def-mclark-ab                                    # HPC account for running datatool
-TOOL_CACHE: $HOME/TMPDIR                                       # Path to gistool cache directory
+TOOL_CACHE: default                                            # Path to gistool cache directory
 EASYMORE_CLIENT: easymore cli                                  # Name of easymore client
-EASYMORE_CACHE: /home/darri/easymore/                          # Path to easymore cache directory
+EASYMORE_CACHE: default                                        # Path to easymore cache directory
 EASYMORE_JOB_CONF: "installs/MAF/02_model_agnostic_component/easymore-job.slurm" #Path to easymore job config
 
 ### ============================================= 3. Model Agnostic settings: =============================================================
@@ -292,7 +291,7 @@ PSO_CONVERGENCE_VAL: 1.00E-4                                   # PSO convergence
 # Sensitivity analysis settings
 RUN_SENSITIVITY_ANALYSIS: true                                 # Check to select whether to run a sensitivy analysis from the calibration output
 
-# Model decision analysis settings
+# SUMMA Model decision analysis settings
 RUN_DECISION_ANALYSIS: true                                    # Check to select whether to run an analysis of model decisions 
 DECISION_OPTIONS:                                              # Select which SUMMA model decisions to analyse
   snowIncept: 
