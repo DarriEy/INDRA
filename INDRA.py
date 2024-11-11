@@ -970,7 +970,7 @@ class INDRA:
                 # Try to preserve the type of the original value
                 try:
                     if isinstance(current_value, bool):
-                        new_value = new_value.lower() in ('True', 'yes', '1', 'on')
+                        new_value = new_value in ('True', 'yes', '1', 'on')
                     elif isinstance(current_value, int):
                         new_value = int(new_value)
                     elif isinstance(current_value, float):
