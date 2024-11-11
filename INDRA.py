@@ -527,7 +527,9 @@ class Chairperson:
         """
         
         system_message = '''You are the chairperson of INDRA, coordinating a panel of hydrological modeling experts 
-                            to determine optimal initial settings for a CONFLUENCE model configuration.'''
+                            to determine optimal initial settings for a CONFLUENCE model configuration. Always use 
+                            Python boolean values True/False (not true/false) when specifying boolean parameters.'''
+
         
         prompt = f"""
         We are initiating a new CONFLUENCE project for the watershed named: {watershed_name}
@@ -583,6 +585,11 @@ class Chairperson:
         exec(config_code, globals(), local_vars)
         config = local_vars['config']
         
+        # Additional validation of boolean values
+        for key, value in config.items():
+            if isinstance(value, str) and value.lower() in ['true', 'false']:
+                config[key] = value.lower() == 'true'
+
         # Clean up the justification summary
         justification_summary = justification_part.strip()
 
@@ -963,7 +970,7 @@ class INDRA:
                 # Try to preserve the type of the original value
                 try:
                     if isinstance(current_value, bool):
-                        new_value = new_value.lower() in ('true', 'yes', '1', 'on')
+                        new_value = new_value.lower() in ('True', 'yes', '1', 'on')
                     elif isinstance(current_value, int):
                         new_value = int(new_value)
                     elif isinstance(current_value, float):
