@@ -16,8 +16,8 @@
 
 ### ============================================= 1. Global settings: =====================================================================
 # Main paths
-CONFLUENCE_DATA_DIR: "~/data/CONFLUENCE_data"
-CONFLUENCE_CODE_DIR: "~/code/CONFLUENCE"
+CONFLUENCE_DATA_DIR: "/home/darri/data/CONFLUENCE_data"
+CONFLUENCE_CODE_DIR: "/home/darri/code/CONFLUENCE"
 
 # Experiment settings
 DOMAIN_NAME: "Chena"                                           # Name of experimental domain
