@@ -510,13 +510,11 @@ class Chairperson:
             yaml.dump(config, f)
         print(f"Updated configuration saved to {file_path}")
 
+    
     def expert_initiation(self, watershed_name: str) -> Tuple[Dict[str, Any], str]:
         """
         Generate expert-guided initial configuration for new watershed.
-
-        Coordinates expert panel to determine optimal initial settings based on
-        watershed characteristics, modeling best practices, and validates spatial boundaries.
-
+        
         Args:
             watershed_name (str): Name of watershed to be modeled
 
@@ -525,11 +523,9 @@ class Chairperson:
                 - Initial configuration dictionary
                 - Justification for configuration choices
         """
-        
         system_message = '''You are the chairperson of INDRA, coordinating a panel of hydrological modeling experts 
                             to determine optimal initial settings for a CONFLUENCE model configuration. Always use 
                             Python boolean values True/False (not true/false) when specifying boolean parameters.'''
-
         
         prompt = f"""
         We are initiating a new CONFLUENCE project for the watershed named: {watershed_name}
@@ -543,25 +539,24 @@ class Chairperson:
         5. ELEVATION_BAND_SIZE (if using elevation-based discretization)
         6. MIN_HRU_SIZE: Minimum size of the model domain HRUs, in km2 recommended 10 km2 for large watersheds and 1 km2 for small watersheds
         7. POUR_POINT_COORDS: coordinates lat/lon to define watershed to delineate must be specified as decimals with 6 digits 
-                            in the format 'lat/lon'. Select coordinates on the river main step. Make sure to select a point that is not close to a confluence or 
-                            in the estuary as these areas can be problematic for the delineation, if location is not specified, please select a location about 5 km inland from the estuary.
-        8. BOUNDING_BOX_COORDS: coordinates of the bounding box of the watershed must be specified as decimals with 2 digits 
-                            in the format 'lat_max/lon_min/lat_min/lon_max'. Be absolutely sure you include the geographical region of the whole watershed of the river and it's tributaries. 
-                            Please add a generous buffer around it to be safe. Be sure that the bounding box includes the Pour Point from 7.
-        9. PARAMS_TO_CALIBRATE: If HYDROLOGICAL_MODEL is SUMMA, select which parameters to calibrate. Provide your suggestions as a comma separated list with no white space. Options are: upperBoundHead,lowerBoundHead,upperBoundTheta,lowerBoundTheta,upperBoundTemp,lowerBoundTemp,tempCritRain,tempRangeTimestep,frozenPrecipMultip,snowfrz_scale,fixedThermalCond_snow,albedoMax,albedoMinWinter,albedoMinSpring,albedoMaxVisible,albedoMinVisible,albedoMaxNearIR,albedoMinNearIR,albedoDecayRate,albedoSootLoad,albedoRefresh,radExt_snow,directScale,Frad_direct,Frad_vis,newSnowDenMin,newSnowDenMult,newSnowDenScal,constSnowDen,newSnowDenAdd,newSnowDenMultTemp,newSnowDenMultWind,newSnowDenMultAnd,newSnowDenBase,densScalGrowth,tempScalGrowth,grainGrowthRate,densScalOvrbdn,tempScalOvrbdn,baseViscosity,Fcapil,k_snow,mw_exp,z0Snow,z0Soil,z0Canopy,zpdFraction,critRichNumber,Louis79_bparam,Louis79_cStar,Mahrt87_eScale,leafExchangeCoeff,windReductionParam,Kc25,Ko25,Kc_qFac,Ko_qFac,kc_Ha,ko_Ha,vcmax25_canopyTop,vcmax_qFac,vcmax_Ha,vcmax_Hd,vcmax_Sv,vcmax_Kn,jmax25_scale,jmax_Ha,jmax_Hd,jmax_Sv,fractionJ,quantamYield,vpScaleFactor,cond2photo_slope,minStomatalConductance,winterSAI,summerLAI,rootScaleFactor1,rootScaleFactor2,rootingDepth,rootDistExp,plantWiltPsi,soilStressParam,critSoilWilting,critSoilTranspire,critAquiferTranspire,minStomatalResistance,leafDimension,heightCanopyTop,heightCanopyBottom,specificHeatVeg,maxMassVegetation,throughfallScaleSnow,throughfallScaleRain,refInterceptCapSnow,refInterceptCapRain,snowUnloadingCoeff,canopyDrainageCoeff,ratioDrip2Unloading,canopyWettingFactor,canopyWettingExp,soil_dens_intr,thCond_soil,frac_sand,frac_silt,frac_clay,fieldCapacity,wettingFrontSuction,theta_mp,theta_sat,theta_res,vGn_alpha,vGn_n,mpExp,k_soil,k_macropore,kAnisotropic,zScale_TOPMODEL,compactedDepth,aquiferBaseflowRate,aquiferScaleFactor,aquiferBaseflowExp,qSurfScale,specificYield,specificStorage,f_impede,soilIceScale,soilIceCV,minwind,minstep,maxstep,wimplicit,maxiter,relConvTol_liquid,absConvTol_liquid,relConvTol_matric,absConvTol_matric,relConvTol_energy,absConvTol_energy,relConvTol_aquifr,absConvTol_aquifr,zmin,zmax,zminLayer1,zminLayer2,zminLayer3,zminLayer4,zminLayer5,zmaxLayer1_lower,zmaxLayer2_lower,zmaxLayer3_lower,zmaxLayer4_lower,zmaxLayer1_upper,zmaxLayer2_upper,zmaxLayer3_upper,zmaxLayer4_upper,minTempUnloading,minWindUnloading,rateTempUnloading,rateWindUnloading
+                            in the format 'lat/lon'. Select coordinates on the river main step.
+        8. BOUNDING_BOX_COORDS: coordinates of the bounding box must be specified as decimals with 2 digits 
+                            in the format 'lat_max/lon_min/lat_min/lon_max'. Follow the geographer expert guidelines for generous margins.
+        9. PARAMS_TO_CALIBRATE: If HYDROLOGICAL_MODEL is SUMMA, select which parameters to calibrate.
 
         For each parameter, provide a brief justification for your recommendation.
 
-        After gathering all expert opinions, please:
-        1. Create a Python dictionary named 'config' with the agreed-upon settings.
-        2. Provide a summary of the justifications for these settings.
+        IMPORTANT: 
+        - Use proper Python syntax: True/False for booleans (not true/false)
+        - For string values that contain spaces, enclose them in quotes
+        - Be extremely generous with bounding box coordinates following geographer expert guidelines
 
         Present your response in the following format:
 
         CONFIG DICTIONARY:
         config = {{
-            "PARAMETER1": value1,
-            "PARAMETER2": value2,
+            "HYDROLOGICAL_MODEL": "SUMMA",  # Example
+            "DELINEATE_BY_POURPOINT": True,  # Example of proper boolean format
             ...
         }}
 
@@ -580,40 +575,60 @@ class Chairperson:
         # Remove any markdown code block syntax
         config_code = config_code.replace("```python", "").replace("```", "").strip()
         
-        # Execute the config dictionary code
-        local_vars = {}
-        exec(config_code, globals(), local_vars)
-        config = local_vars['config']
+        # Pre-process the config code to handle boolean values
+        def clean_config_code(code: str) -> str:
+            """Clean and validate config code, particularly boolean values."""
+            lines = code.split('\n')
+            cleaned_lines = []
+            
+            for line in lines:
+                if ':' in line:
+                    key_part, value_part = line.split(':', 1)
+                    # Handle comment separately
+                    if '#' in value_part:
+                        value_part, comment = value_part.split('#', 1)
+                        comment = f"#{comment}"
+                    else:
+                        comment = ""
+                    
+                    # Clean up the value part
+                    value_part = value_part.strip().strip(',')
+                    
+                    # Handle boolean values
+                    if value_part.lower() in ['true', 'false']:
+                        value_part = value_part.title()  # Capitalize first letter
+                    
+                    # Reconstruct the line
+                    line = f"{key_part}: {value_part}{', ' if ',' in line else ''}{comment}"
+                
+                cleaned_lines.append(line)
+            
+            return '\n'.join(cleaned_lines)
         
-        # Additional validation of boolean values
-        for key, value in config.items():
-            if isinstance(value, str) and value.lower() in ['true', 'false']:
-                config[key] = value.lower() == 'true'
-
+        # Clean the config code
+        cleaned_config_code = clean_config_code(config_code)
+        
+        try:
+            # Execute the cleaned config code
+            local_vars = {}
+            exec(cleaned_config_code, globals(), local_vars)
+            config = local_vars['config']
+            
+            # Final validation of boolean values
+            for key, value in config.items():
+                if isinstance(value, str):
+                    if value.lower() == 'true':
+                        config[key] = True
+                    elif value.lower() == 'false':
+                        config[key] = False
+            
+        except Exception as e:
+            self.logger.error(f"Error processing configuration: {str(e)}")
+            self.logger.error(f"Problematic config code:\n{cleaned_config_code}")
+            raise
+        
         # Clean up the justification summary
         justification_summary = justification_part.strip()
-
-        # Find the geographer expert
-        geographer = next((expert for expert in self.experts if isinstance(expert, GeographerExpert)), None)
-        
-        if geographer:
-            # Validate coordinates
-            validation = geographer.validate_coordinates(
-                config.get('POUR_POINT_COORDS'),
-                config.get('BOUNDING_BOX_COORDS')
-            )
-            
-            if not validation['valid']:
-                # Update coordinates with validated versions
-                config['POUR_POINT_COORDS'] = validation['pour_point']
-                config['BOUNDING_BOX_COORDS'] = validation['bounding_box']
-                
-                # Add validation justification to overall justification
-                justification_summary += "\n\nCoordinate Adjustments:\n" + validation['justification']
-                
-                self.logger.info("Coordinates adjusted based on geographer validation:")
-                for adj in validation['adjustments']:
-                    self.logger.info(f"- {adj}")
         
         return config, justification_summary
 

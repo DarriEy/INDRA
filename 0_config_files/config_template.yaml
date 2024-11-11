@@ -289,10 +289,10 @@ PSO_INIT_POPULATION_METHOD: Random                             # PSO initial pop
 PSO_CONVERGENCE_VAL: 1.00E-4                                   # PSO convergence value
 
 # Sensitivity analysis settings
-RUN_SENSITIVITY_ANALYSIS: true                                 # Check to select whether to run a sensitivy analysis from the calibration output
+RUN_SENSITIVITY_ANALYSIS: True                                 # Check to select whether to run a sensitivy analysis from the calibration output
 
 # SUMMA Model decision analysis settings
-RUN_DECISION_ANALYSIS: true                                    # Check to select whether to run an analysis of model decisions 
+RUN_DECISION_ANALYSIS: True                                    # Check to select whether to run an analysis of model decisions 
 DECISION_OPTIONS:                                              # Select which SUMMA model decisions to analyse
   snowIncept: 
     - lightSnow
