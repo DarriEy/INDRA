@@ -555,11 +555,11 @@ class Chairperson:
                     # Add validation explanation to justification
                     justification += "\n\nCoordinate Adjustments:\n" + validation['justification']
                     
-                    self.logger.info("Coordinates adjusted based on geographer validation:")
+                    print("Coordinates adjusted based on geographer validation:")
                     for adj in validation['adjustments']:
-                        self.logger.info(f"- {adj}")
+                        print(f"- {adj}")
             except Exception as e:
-                self.logger.error(f"Error during coordinate validation: {str(e)}")
+                print(f"Error during coordinate validation: {str(e)}")
                 raise
         
         return config, justification
@@ -660,8 +660,8 @@ class Chairperson:
                     elif value.lower() == 'false':
                         config[key] = False
         except Exception as e:
-            self.logger.error(f"Error processing configuration: {str(e)}")
-            self.logger.error(f"Problematic config code:\n{cleaned_config_code}")
+            print(f"Error processing configuration: {str(e)}")
+            print(f"Problematic config code:\n{cleaned_config_code}")
             raise
         
         return config, justification_part.strip()
@@ -935,7 +935,7 @@ class INDRA:
                 return status
             return "UNKNOWN"
         except Exception as e:
-            self.logger.error(f"Error checking job status: {str(e)}")
+            print(f"Error checking job status: {str(e)}")
             return "UNKNOWN"
 
     def _read_confluence_results(self, config_path: Path, job_id: str) -> Optional[Dict[str, Any]]:
@@ -964,7 +964,7 @@ class INDRA:
             
             # Check if output directory exists
             if not output_dir.exists():
-                self.logger.error(f"CONFLUENCE output directory not found: {output_dir}")
+                print(f"CONFLUENCE output directory not found: {output_dir}")
                 return None
                 
             # Read key output files and compile results
@@ -979,7 +979,7 @@ class INDRA:
             return results
             
         except Exception as e:
-            self.logger.error(f"Error reading CONFLUENCE results: {str(e)}")
+            print(f"Error reading CONFLUENCE results: {str(e)}")
             return None
     
     def _modify_configuration(self, settings: Dict[str, Any], expert_config: Dict[str, Any]) -> Optional[Dict[str, Any]]:
