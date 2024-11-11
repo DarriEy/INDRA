@@ -43,7 +43,7 @@ STREAM_THRESHOLD: 5000                                        # Threshold flow a
 LUMPED_WATERSHED_METHOD: TauDEM                                # Use pysheds or TauDEM for lumped delineation
 CLEANUP_INTERMEDIATE_FILES: False                               # Remove temporary files from delieation
 DELINEATE_BY_POURPOINT: True                                   # Delineate watershed from pour point
-MOVE_OUTLETS_MAX_DISTANCE: 50                                  # Maximum distance to move outlets to stream
+MOVE_OUTLETS_MAX_DISTANCE: 100                                 # Maximum distance to move outlets to stream
 
 
 # Domain discretization settings
