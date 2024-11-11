@@ -446,39 +446,12 @@ class Chairperson:
         6. MIN_HRU_SIZE: Minimum size of the model domain HRUs, in km2 recommended 10 km2 for large watersheds and 1 km2 for small watersheds
         7. POUR_POINT_COORDS: coordinates lat/lon to define watershed to delineate must be specified as decimals with 6 digits 
                              in the format 'lat/lon'. Select coordinates on the river main step. Make sure to select a point that is not close to a confluence or 
-                             in the estuary as these areas can be problematic for the delineation.
+                             in the estuary as these areas can be problematic for the delineation, if location is not specified, please select a location about 20 km inland from the estuary.
         8. BOUNDING_BOX_COORDS: coordinates of the bounding box of the watershed must be specified as decimals with 2 digits 
                                in the format 'lat_max/lon_min/lat_min/lon_max'. Make sure you include the whole watershed of the river and add a generous buffer around it to be safe. 
                                Be sure that the Boundaries include the Pour Point Coords from 7.
         9. PARAMS_TO_CALIBRATE: If HYDROLOGICAL_MODEL is SUMMA, select which parameters to calibrate. Provide your suggestions as a comma separated list with no white space. Options are: upperBoundHead,lowerBoundHead,upperBoundTheta,lowerBoundTheta,upperBoundTemp,lowerBoundTemp,tempCritRain,tempRangeTimestep,frozenPrecipMultip,snowfrz_scale,fixedThermalCond_snow,albedoMax,albedoMinWinter,albedoMinSpring,albedoMaxVisible,albedoMinVisible,albedoMaxNearIR,albedoMinNearIR,albedoDecayRate,albedoSootLoad,albedoRefresh,radExt_snow,directScale,Frad_direct,Frad_vis,newSnowDenMin,newSnowDenMult,newSnowDenScal,constSnowDen,newSnowDenAdd,newSnowDenMultTemp,newSnowDenMultWind,newSnowDenMultAnd,newSnowDenBase,densScalGrowth,tempScalGrowth,grainGrowthRate,densScalOvrbdn,tempScalOvrbdn,baseViscosity,Fcapil,k_snow,mw_exp,z0Snow,z0Soil,z0Canopy,zpdFraction,critRichNumber,Louis79_bparam,Louis79_cStar,Mahrt87_eScale,leafExchangeCoeff,windReductionParam,Kc25,Ko25,Kc_qFac,Ko_qFac,kc_Ha,ko_Ha,vcmax25_canopyTop,vcmax_qFac,vcmax_Ha,vcmax_Hd,vcmax_Sv,vcmax_Kn,jmax25_scale,jmax_Ha,jmax_Hd,jmax_Sv,fractionJ,quantamYield,vpScaleFactor,cond2photo_slope,minStomatalConductance,winterSAI,summerLAI,rootScaleFactor1,rootScaleFactor2,rootingDepth,rootDistExp,plantWiltPsi,soilStressParam,critSoilWilting,critSoilTranspire,critAquiferTranspire,minStomatalResistance,leafDimension,heightCanopyTop,heightCanopyBottom,specificHeatVeg,maxMassVegetation,throughfallScaleSnow,throughfallScaleRain,refInterceptCapSnow,refInterceptCapRain,snowUnloadingCoeff,canopyDrainageCoeff,ratioDrip2Unloading,canopyWettingFactor,canopyWettingExp,soil_dens_intr,thCond_soil,frac_sand,frac_silt,frac_clay,fieldCapacity,wettingFrontSuction,theta_mp,theta_sat,theta_res,vGn_alpha,vGn_n,mpExp,k_soil,k_macropore,kAnisotropic,zScale_TOPMODEL,compactedDepth,aquiferBaseflowRate,aquiferScaleFactor,aquiferBaseflowExp,qSurfScale,specificYield,specificStorage,f_impede,soilIceScale,soilIceCV,minwind,minstep,maxstep,wimplicit,maxiter,relConvTol_liquid,absConvTol_liquid,relConvTol_matric,absConvTol_matric,relConvTol_energy,absConvTol_energy,relConvTol_aquifr,absConvTol_aquifr,zmin,zmax,zminLayer1,zminLayer2,zminLayer3,zminLayer4,zminLayer5,zmaxLayer1_lower,zmaxLayer2_lower,zmaxLayer3_lower,zmaxLayer4_lower,zmaxLayer1_upper,zmaxLayer2_upper,zmaxLayer3_upper,zmaxLayer4_upper,minTempUnloading,minWindUnloading,rateTempUnloading,rateWindUnloading
-        10. DECISION_OPTIONS: If HYDROLOGICAL_MODEL is SUMMA, select which model decisions to consider. Provide your answer as a YAML style formated dictionary of lists. Options are:
-                            "soilCatTbl": ["STAS", "STAS-RUC", "ROSETTA"],
-                            "vegeParTbl": ["USGS", "MODIFIED_IGBP_MODIS_NOAH"],
-                            "soilStress": ["NoahType", "CLM_Type", "SiB_Type"],
-                            "stomResist": ["BallBerry", "Jarvis"],
-                            "num_method": ["itertive", "non_iter", "itersurf"],
-                            "fDerivMeth": ["numericl", "analytic"],
-                            "LAI_method": ["monTable", "specified"],
-                            "f_Richards": ["moisture", "mixdform"],
-                            "groundwatr": ["qTopmodl", "bigBuckt", "noXplict"],
-                            "hc_profile": ["constant", "pow_prof"],
-                            "bcUpprTdyn": ["presTemp", "nrg_flux"],
-                            "bcLowrTdyn": ["presTemp", "zeroFlux"],
-                            "bcUpprSoiH": ["presHead", "liq_flux"],
-                            "bcLowrSoiH": ["drainage", "presHead", "bottmPsi", "zeroFlux"],
-                            "veg_traits": ["Raupach_BLM1994", "CM_QJRMS1998", "vegTypeTable"],
-                            "canopyEmis": ["simplExp", "difTrans"],
-                            "snowIncept": ["stickySnow", "lightSnow"],
-                            "windPrfile": ["exponential", "logBelowCanopy"],
-                            "astability": ["standard", "louisinv", "mahrtexp"],
-                            "canopySrad": ["noah_mp", "CLM_2stream", "UEB_2stream", "NL_scatter", "BeersLaw"],
-                            "alb_method": ["conDecay", "varDecay"],
-                            "compaction": ["consettl", "anderson"],
-                            "snowLayers": ["CLM_2010", "jrdn1991"],
-                            "thCondSnow": ["tyen1965", "melr1977", "jrdn1991", "smnv2000"],
-                            "thCondSoil": ["funcSoilWet", "mixConstit", "hanssonVZJ"],
-                            "spatial_gw": ["localColumn", "singleBasin"],
-                            "subRouting": ["timeDlay", "qInstant"]
+        
 
         For each parameter, provide a brief justification for your recommendation.
 
