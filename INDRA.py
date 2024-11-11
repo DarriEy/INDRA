@@ -350,23 +350,111 @@ class GeographerExpert(Expert):
         If any issues are found:
         1. Adjust pour point coordinates if needed to meet stream and distance criteria
         2. Expand bounding box if coverage is insufficient
-        3. Provide detailed justification for any changes
+        3. Explain your reasoning for any changes
+
+        Respond with a clear YES or NO for validation, followed by any adjustments and justification.
+        If changes are needed, provide the new coordinates in the exact same format as the input.
         
-        Return response as a Python dictionary:
-        {{
-            "valid": bool,
-            "pour_point": str,  # Original or corrected
-            "bounding_box": str,  # Original or corrected
-            "adjustments": list,  # List of any changes made
-            "justification": str  # Explanation of changes
-        }}
+        Format your response like this:
+        VALIDATION: YES or NO
+
+        POUR_POINT: lat/lon (only if changes needed)
+        BOUNDING_BOX: lat_max/lon_min/lat_min/lon_max (only if changes needed)
+
+        ADJUSTMENTS:
+        - List each adjustment made
+        
+        JUSTIFICATION:
+        Detailed explanation of validation and any changes
         """
         
         response = self.api.generate_text(prompt, system_message)
-        # Execute the response to get the dictionary
-        local_vars = {}
-        exec(f"result = {response}", globals(), local_vars)
-        return local_vars['result']
+        
+        # Parse the response safely
+        try:
+            # Split response into sections
+            sections = response.split('\n\n')
+            
+            # Initialize result dictionary
+            result = {
+                "valid": False,
+                "pour_point": pour_point,  # Default to original
+                "bounding_box": bounding_box,  # Default to original
+                "adjustments": [],
+                "justification": ""
+            }
+            
+            # Parse each section
+            for section in sections:
+                if section.startswith('VALIDATION:'):
+                    result['valid'] = 'YES' in section.upper()
+                
+                elif section.startswith('POUR_POINT:'):
+                    new_pour_point = section.split(':', 1)[1].strip()
+                    if new_pour_point:
+                        result['pour_point'] = new_pour_point
+                        result['adjustments'].append(f"Updated pour point to {new_pour_point}")
+                
+                elif section.startswith('BOUNDING_BOX:'):
+                    new_bbox = section.split(':', 1)[1].strip()
+                    if new_bbox:
+                        result['bounding_box'] = new_bbox
+                        result['adjustments'].append(f"Updated bounding box to {new_bbox}")
+                
+                elif section.startswith('ADJUSTMENTS:'):
+                    adjustments = section.split(':', 1)[1].strip().split('\n')
+                    result['adjustments'].extend([adj.strip('- ').strip() for adj in adjustments if adj.strip('- ').strip()])
+                
+                elif section.startswith('JUSTIFICATION:'):
+                    result['justification'] = section.split(':', 1)[1].strip()
+            
+            # Validate the coordinates format
+            if not self._validate_coordinate_format(result['pour_point'], result['bounding_box']):
+                raise ValueError("Invalid coordinate format in response")
+            
+            return result
+            
+        except Exception as e:
+            print(f"Error parsing geographer response: {str(e)}")
+            print(f"Raw response:\n{response}")
+            
+            # Return a valid dictionary indicating validation failed
+            return {
+                "valid": False,
+                "pour_point": pour_point,
+                "bounding_box": bounding_box,
+                "adjustments": ["Validation failed due to parsing error"],
+                "justification": f"Error during coordinate validation: {str(e)}"
+            }
+
+    def _validate_coordinate_format(self, pour_point: str, bounding_box: str) -> bool:
+        """
+        Validate the format of coordinates.
+        
+        Args:
+            pour_point: String of format "lat/lon"
+            bounding_box: String of format "lat_max/lon_min/lat_min/lon_max"
+            
+        Returns:
+            bool: True if formats are valid
+        """
+        try:
+            # Validate pour point format
+            pp_parts = pour_point.split('/')
+            if len(pp_parts) != 2:
+                return False
+            float(pp_parts[0]), float(pp_parts[1])  # Check if convertible to float
+            
+            # Validate bounding box format
+            bb_parts = bounding_box.split('/')
+            if len(bb_parts) != 4:
+                return False
+            for part in bb_parts:
+                float(part)  # Check if convertible to float
+            
+            return True
+        except (ValueError, AttributeError):
+            return False
 
 class Chairperson:
     """
