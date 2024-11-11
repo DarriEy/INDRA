@@ -326,7 +326,7 @@ class GeographerExpert(Expert):
         Returns:
             Dict containing validation results and any necessary adjustments
         """
-        system_message = "You are an expert geographer validating watershed coordinates."
+        system_message = "You are a world-class expert geographer validating watershed coordinates."
         
         prompt = f"""
         Please validate the following watershed coordinates:
@@ -334,13 +334,23 @@ class GeographerExpert(Expert):
         Bounding box: {bounding_box}
         
         Verify that:
-        1. The pour point coordinates lie on a known river channel
-        2. The pour point is at least 5km upstream from any major confluence or estuary
-        3. The bounding box fully contains the pour point with significant margin
-        4. The bounding box extends at least 10km beyond likely watershed boundaries, including all headwaters
-        5. The coordinates have appropriate precision (6 decimal places for pour point, 2 for bounding box)
+        1. The pour point coordinates:
+           - Lie on a known river channel (use available hydrographic data)
+           - Are at least 10km upstream from any major confluence
+           - Are at least 15km upstream from any estuary
+           - Have appropriate precision (6 decimal places)
         
-        If any issues are found, provide corrected coordinates with justification.
+        2. The bounding box:
+           - Extends at least 50km beyond likely watershed boundaries
+           - Includes ALL potential tributary headwaters
+           - Has significant margin beyond drainage divides
+           - Fully contains the pour point with at least 30km margin
+           - Has appropriate precision (2 decimal places)
+        
+        If any issues are found:
+        1. Adjust pour point coordinates if needed to meet stream and distance criteria
+        2. Expand bounding box if coverage is insufficient
+        3. Provide detailed justification for any changes
         
         Return response as a Python dictionary:
         {{
@@ -513,7 +523,7 @@ class Chairperson:
     
     def expert_initiation(self, watershed_name: str) -> Tuple[Dict[str, Any], str]:
         """
-        Generate expert-guided initial configuration for new watershed.
+        Generate expert-guided initial configuration with validated coordinates.
         
         Args:
             watershed_name (str): Name of watershed to be modeled
@@ -523,9 +533,41 @@ class Chairperson:
                 - Initial configuration dictionary
                 - Justification for configuration choices
         """
+        # First get initial configuration from experts
+        config, justification = self._get_initial_config(watershed_name)
+        
+        # Find the geographer expert to validate coordinates
+        geographer = next((expert for expert in self.experts if isinstance(expert, GeographerExpert)), None)
+        
+        if geographer:
+            try:
+                # Validate coordinates through geographer expert
+                validation = geographer.validate_coordinates(
+                    config.get('POUR_POINT_COORDS'),
+                    config.get('BOUNDING_BOX_COORDS')
+                )
+                
+                if not validation['valid']:
+                    # Update coordinates with validated versions
+                    config['POUR_POINT_COORDS'] = validation['pour_point']
+                    config['BOUNDING_BOX_COORDS'] = validation['bounding_box']
+                    
+                    # Add validation explanation to justification
+                    justification += "\n\nCoordinate Adjustments:\n" + validation['justification']
+                    
+                    self.logger.info("Coordinates adjusted based on geographer validation:")
+                    for adj in validation['adjustments']:
+                        self.logger.info(f"- {adj}")
+            except Exception as e:
+                self.logger.error(f"Error during coordinate validation: {str(e)}")
+                raise
+        
+        return config, justification
+
+    def _get_initial_config(self, watershed_name: str) -> Tuple[Dict[str, Any], str]:
+        """Helper method to get initial configuration from expert panel."""
         system_message = '''You are the chairperson of INDRA, coordinating a panel of hydrological modeling experts 
-                            to determine optimal initial settings for a CONFLUENCE model configuration. Always use 
-                            Python boolean values True/False (not true/false) when specifying boolean parameters.'''
+                            to determine optimal initial settings for a CONFLUENCE model configuration.'''
         
         prompt = f"""
         We are initiating a new CONFLUENCE project for the watershed named: {watershed_name}
@@ -539,9 +581,16 @@ class Chairperson:
         5. ELEVATION_BAND_SIZE (if using elevation-based discretization)
         6. MIN_HRU_SIZE: Minimum size of the model domain HRUs, in km2 recommended 10 km2 for large watersheds and 1 km2 for small watersheds
         7. POUR_POINT_COORDS: coordinates lat/lon to define watershed to delineate must be specified as decimals with 6 digits 
-                            in the format 'lat/lon'. Select coordinates on the river main step.
+                            in the format 'lat/lon'. Select coordinates on the river main step, following the geographer's guidelines:
+                            - Must be at least 10km upstream from any major confluence
+                            - Must be at least 15km upstream from any estuary
+                            - Must be verified against known stream networks
         8. BOUNDING_BOX_COORDS: coordinates of the bounding box must be specified as decimals with 2 digits 
-                            in the format 'lat_max/lon_min/lat_min/lon_max'. Follow the geographer expert guidelines for generous margins.
+                            in the format 'lat_max/lon_min/lat_min/lon_max'. Follow the geographer's guidelines:
+                            - Must extend at least 50km beyond ANY potential watershed boundary
+                            - Must include entire headwater regions of ALL potential tributaries
+                            - Must account for regional topographic features
+                            - Must include substantial margin beyond the furthest potential stream origins
         9. PARAMS_TO_CALIBRATE: If HYDROLOGICAL_MODEL is SUMMA, select which parameters to calibrate.
 
         For each parameter, provide a brief justification for your recommendation.
@@ -566,71 +615,56 @@ class Chairperson:
         
         response = self.api.generate_text(prompt, system_message, max_tokens=1500)
         
-        # Split the response into config and justification
+        # Split and process response
         config_part, justification_part = response.split("JUSTIFICATION SUMMARY:")
-        
-        # Extract the Python dictionary code
         config_code = config_part.split("CONFIG DICTIONARY:")[1].strip()
-        
-        # Remove any markdown code block syntax
         config_code = config_code.replace("```python", "").replace("```", "").strip()
         
-        # Pre-process the config code to handle boolean values
+        # Clean and validate config code
         def clean_config_code(code: str) -> str:
-            """Clean and validate config code, particularly boolean values."""
             lines = code.split('\n')
             cleaned_lines = []
             
             for line in lines:
                 if ':' in line:
                     key_part, value_part = line.split(':', 1)
-                    # Handle comment separately
                     if '#' in value_part:
                         value_part, comment = value_part.split('#', 1)
                         comment = f"#{comment}"
                     else:
                         comment = ""
                     
-                    # Clean up the value part
                     value_part = value_part.strip().strip(',')
                     
-                    # Handle boolean values
                     if value_part.lower() in ['true', 'false']:
-                        value_part = value_part.title()  # Capitalize first letter
+                        value_part = value_part.title()
                     
-                    # Reconstruct the line
                     line = f"{key_part}: {value_part}{', ' if ',' in line else ''}{comment}"
                 
                 cleaned_lines.append(line)
             
             return '\n'.join(cleaned_lines)
         
-        # Clean the config code
         cleaned_config_code = clean_config_code(config_code)
         
         try:
-            # Execute the cleaned config code
             local_vars = {}
             exec(cleaned_config_code, globals(), local_vars)
             config = local_vars['config']
             
-            # Final validation of boolean values
+            # Validate boolean values
             for key, value in config.items():
                 if isinstance(value, str):
                     if value.lower() == 'true':
                         config[key] = True
                     elif value.lower() == 'false':
                         config[key] = False
-            
         except Exception as e:
             self.logger.error(f"Error processing configuration: {str(e)}")
             self.logger.error(f"Problematic config code:\n{cleaned_config_code}")
             raise
         
-        # Clean up the justification summary
-        justification_summary = justification_part.strip()
-        
-        return config, justification_summary
+        return config, justification_part.strip()
 
 class INDRA:
     """
