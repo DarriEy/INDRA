@@ -73,28 +73,51 @@ EXPERT_PROMPTS = {
     
      Provide insights on how the current configuration might impact the model's ability to accurately represent the hydrogeologicallogical system, and suggest potential improvements or alternative approaches where applicable.
     """,
-     "Geographer Expert": f"""
-        {CONFLUENCE_OVERVIEW}
+
+    "Geographer Expert": f"""
+    {CONFLUENCE_OVERVIEW}
+    
+    As the Geographer Expert, your role is to determine precise spatial boundaries and coordinates for watershed delineation across broad geographic regions. Consider the following aspects:
+    1. Regional Drainage Systems
+        - Identify major river systems and their interconnections
+        - Consider regional topography and drainage patterns
+        - Account for potential underground karst systems or complex drainage networks
         
-        As the Geographer Expert, your role is to determine precise spatial boundaries and coordinates for watershed delineation. Consider the following aspects:
-        1. Watershed extent based on topography and drainage patterns
-        2. Stream network connectivity and hierarchy
-        3. Pour point location verification and adjustment
-        4. Buffer zone requirements for proper watershed delineation
-        5. DEM resolution and its impact on coordinate precision
-        6. Potential boundary issues (e.g., karst areas, braided channels, deltas)
+    2. Watershed Extent Determination
+        - Always extend boundaries significantly beyond expected watershed limits
+        - Consider regional geological features that might influence drainage
+        - Include all potential tributary headwaters in the broader region
+        - Account for seasonal variations in watershed extent
         
+    3. Coordinate Selection Principles
         For pour points:
-        - Verify the point lies on the main channel
-        - Ensure it's at least 5km upstream from confluences/estuaries
-        - Validate against known stream networks
+        - Must be on the main river channel
+        - Must be at least 10km upstream from any major confluence
+        - Must be at least 15km upstream from any estuary
+        - Verify against known stream networks
+        - Specify with 6 decimal places precision
         
         For bounding boxes:
-        - Add minimum 10km buffer beyond expected watershed boundary
-        - Verify inclusion of all potential tributary headwaters
-        - Check for complete stream network coverage
-        - Ensure pour point is well within bounds
-        """
+        - Must extend at least 50km beyond ANY potential watershed boundary
+        - Must include entire headwater regions of ALL potential tributaries
+        - Must account for regional topographic features that could influence drainage
+        - Must include substantial margin beyond the furthest potential stream origins
+        - Must fully encompass any regional drainage divides
+        - Must account for uncertainty in watershed boundaries
+        - Specify with 2 decimal places precision
+        
+    4. Validation Requirements
+        - Pour point must be well within bounds (at least 30km from box edges)
+        - Bounding box must include complete regional drainage systems
+        - Must account for both surface and potential subsurface drainage patterns
+        
+    When specifying coordinates:
+    - Pour points: Always select a point that is unambiguously on the main stem
+    - Bounding box: Always err on the side of including too much rather than too little area
+    - If in doubt about extent, add an additional 25km buffer to all sides
+    
+    Your goal is to ensure the selected region is so expansive that it is impossible to miss any part of the watershed or its contributing areas. It's far better to include too much area than risk missing any part of the drainage system.
+    """,
 }
 
 
@@ -314,7 +337,7 @@ class GeographerExpert(Expert):
         1. The pour point coordinates lie on a known river channel
         2. The pour point is at least 5km upstream from any major confluence or estuary
         3. The bounding box fully contains the pour point with significant margin
-        4. The bounding box extends at least 10km beyond likely watershed boundaries
+        4. The bounding box extends at least 10km beyond likely watershed boundaries, including all headwaters
         5. The coordinates have appropriate precision (6 decimal places for pour point, 2 for bounding box)
         
         If any issues are found, provide corrected coordinates with justification.
@@ -521,7 +544,7 @@ class Chairperson:
                             in the format 'lat/lon'. Select coordinates on the river main step. Make sure to select a point that is not close to a confluence or 
                             in the estuary as these areas can be problematic for the delineation, if location is not specified, please select a location about 5 km inland from the estuary.
         8. BOUNDING_BOX_COORDS: coordinates of the bounding box of the watershed must be specified as decimals with 2 digits 
-                            in the format 'lat_max/lon_min/lat_min/lon_max'. Be absolutely sure you include the whole watershed of the river and it's tributaries. 
+                            in the format 'lat_max/lon_min/lat_min/lon_max'. Be absolutely sure you include the geographical region of the whole watershed of the river and it's tributaries. 
                             Please add a generous buffer around it to be safe. Be sure that the bounding box includes the Pour Point from 7.
         9. PARAMS_TO_CALIBRATE: If HYDROLOGICAL_MODEL is SUMMA, select which parameters to calibrate. Provide your suggestions as a comma separated list with no white space. Options are: upperBoundHead,lowerBoundHead,upperBoundTheta,lowerBoundTheta,upperBoundTemp,lowerBoundTemp,tempCritRain,tempRangeTimestep,frozenPrecipMultip,snowfrz_scale,fixedThermalCond_snow,albedoMax,albedoMinWinter,albedoMinSpring,albedoMaxVisible,albedoMinVisible,albedoMaxNearIR,albedoMinNearIR,albedoDecayRate,albedoSootLoad,albedoRefresh,radExt_snow,directScale,Frad_direct,Frad_vis,newSnowDenMin,newSnowDenMult,newSnowDenScal,constSnowDen,newSnowDenAdd,newSnowDenMultTemp,newSnowDenMultWind,newSnowDenMultAnd,newSnowDenBase,densScalGrowth,tempScalGrowth,grainGrowthRate,densScalOvrbdn,tempScalOvrbdn,baseViscosity,Fcapil,k_snow,mw_exp,z0Snow,z0Soil,z0Canopy,zpdFraction,critRichNumber,Louis79_bparam,Louis79_cStar,Mahrt87_eScale,leafExchangeCoeff,windReductionParam,Kc25,Ko25,Kc_qFac,Ko_qFac,kc_Ha,ko_Ha,vcmax25_canopyTop,vcmax_qFac,vcmax_Ha,vcmax_Hd,vcmax_Sv,vcmax_Kn,jmax25_scale,jmax_Ha,jmax_Hd,jmax_Sv,fractionJ,quantamYield,vpScaleFactor,cond2photo_slope,minStomatalConductance,winterSAI,summerLAI,rootScaleFactor1,rootScaleFactor2,rootingDepth,rootDistExp,plantWiltPsi,soilStressParam,critSoilWilting,critSoilTranspire,critAquiferTranspire,minStomatalResistance,leafDimension,heightCanopyTop,heightCanopyBottom,specificHeatVeg,maxMassVegetation,throughfallScaleSnow,throughfallScaleRain,refInterceptCapSnow,refInterceptCapRain,snowUnloadingCoeff,canopyDrainageCoeff,ratioDrip2Unloading,canopyWettingFactor,canopyWettingExp,soil_dens_intr,thCond_soil,frac_sand,frac_silt,frac_clay,fieldCapacity,wettingFrontSuction,theta_mp,theta_sat,theta_res,vGn_alpha,vGn_n,mpExp,k_soil,k_macropore,kAnisotropic,zScale_TOPMODEL,compactedDepth,aquiferBaseflowRate,aquiferScaleFactor,aquiferBaseflowExp,qSurfScale,specificYield,specificStorage,f_impede,soilIceScale,soilIceCV,minwind,minstep,maxstep,wimplicit,maxiter,relConvTol_liquid,absConvTol_liquid,relConvTol_matric,absConvTol_matric,relConvTol_energy,absConvTol_energy,relConvTol_aquifr,absConvTol_aquifr,zmin,zmax,zminLayer1,zminLayer2,zminLayer3,zminLayer4,zminLayer5,zmaxLayer1_lower,zmaxLayer2_lower,zmaxLayer3_lower,zmaxLayer4_lower,zmaxLayer1_upper,zmaxLayer2_upper,zmaxLayer3_upper,zmaxLayer4_upper,minTempUnloading,minWindUnloading,rateTempUnloading,rateWindUnloading
 
