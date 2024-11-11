@@ -39,7 +39,7 @@ POUR_POINT_SHP_NAME: default                                   # If 'default', u
 # Domain representation settings
 DOMAIN_DEFINITION_METHOD: delineate                            # Define domain representation method, current options: subset_geofabric, delineate_geofabric, lumped_watershed
 GEOFABRIC_TYPE: TDX                                            # Source geofabric to subset from, current options: Merit, TDX, NWS
-STREAM_THRESHOLD: 10000                                        # Threshold flow accumulation for stream vectorisation
+STREAM_THRESHOLD: 5000                                        # Threshold flow accumulation for stream vectorisation
 LUMPED_WATERSHED_METHOD: TauDEM                                # Use pysheds or TauDEM for lumped delineation
 CLEANUP_INTERMEDIATE_FILES: False                               # Remove temporary files from delieation
 DELINEATE_BY_POURPOINT: True                                   # Delineate watershed from pour point
