@@ -685,7 +685,7 @@ class Chairperson:
         4. DOMAIN_DISCRETIZATION method (options, elevation, soilclass, landclass)
         5. ELEVATION_BAND_SIZE (if using elevation-based discretization)
         6. MIN_HRU_SIZE: Minimum size of the model domain HRUs, in km2 recommended 10 km2 for large watersheds and 1 km2 for small watersheds
-        7. POUR_POINT_COORDS: coordinates lat/lon to define watershed to delineate must be specified as decimals with 6 digits 
+        7. POUR_POINT_COORDS: coordinates lat/lon to define watershed to delineate must be specified as decimals with 4 digits 
                             in the format 'lat/lon'. Select coordinates on the river main step, following the geographer's guidelines:
                             - Must be at least 10km upstream from any major confluence
                             - Must be at least 15km upstream from any estuary
