@@ -95,7 +95,7 @@ EXPERT_PROMPTS = {
         - Must be at least 10km upstream from any major confluence
         - Must be at least 15km upstream from any estuary
         - Verify against known stream networks
-        - Specify with 6 decimal places precision
+        - Specify with 4 decimal places precision
         
         For bounding boxes:
         - Must extend at least 50km beyond ANY potential watershed boundary
