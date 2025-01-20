@@ -15,7 +15,7 @@ CONFLUENCE_OVERVIEW = """
 CONFLUENCE (Community Optimization and Numerical Framework for Large-domain Understanding of Environmental Networks and Computational Exploration) is an integrated hydrological modeling platform. It combines various components for data management, model setup, optimization, uncertainty analysis, forecasting, and visualization across multiple scales and regions.
 
 Key features of CONFLUENCE include:
-1. Support for multiple hydrological models (currently SUMMA, FLASH)
+1. Support for multiple hydrological models (currently SUMMA, FLASH, FUSE, GR, HYPE, MESH)
 2. Flexible spatial discretization (e.g., GRUSs, HRUs, lumped)
 3. Various forcing data options (e.g., RDRS, ERA5)
 4. Advanced calibration and optimization techniques
